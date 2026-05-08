@@ -1,10 +1,12 @@
 import { ChevronDown, ChevronUp, NotebookPen } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { PANEL_TRANSITION_MS, usePanelMount } from '@/components/panel/panel-shell';
 import { useNotes } from '@/lib/inspector/use-notes';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'open-slide:notes-drawer-open';
+const DRAWER_CONTENT_H = 166;
 
 type Props = {
   slideId: string;
@@ -21,6 +23,7 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
   });
   const { value, setValue, status, flush } = useNotes(slideId, index, initial);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const { mounted, animVisible } = usePanelMount(open);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -76,29 +79,37 @@ export function NotesDrawer({ slideId, index, total, initial }: Props) {
           <ChevronUp className="size-3.5 text-muted-foreground" />
         )}
       </button>
-      {open && (
-        <div className="border-t border-hairline px-3 py-2">
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onBlur={() => {
-              void flush();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                e.preventDefault();
-                textareaRef.current?.blur();
-              } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                e.preventDefault();
+      {mounted && (
+        <div
+          className="overflow-hidden border-t border-hairline transition-[height] ease-out"
+          style={{
+            height: animVisible ? DRAWER_CONTENT_H : 0,
+            transitionDuration: `${PANEL_TRANSITION_MS}ms`,
+          }}
+        >
+          <div className="px-3 py-2">
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onBlur={() => {
                 void flush();
-              }
-            }}
-            placeholder={t.notesDrawer.placeholder}
-            rows={6}
-            spellCheck
-            className="block h-[150px] w-full resize-none rounded-[6px] border border-border bg-card px-3 py-2 text-[13px] leading-relaxed text-card-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-          />
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  textareaRef.current?.blur();
+                } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                  e.preventDefault();
+                  void flush();
+                }
+              }}
+              placeholder={t.notesDrawer.placeholder}
+              rows={6}
+              spellCheck
+              className="block h-[150px] w-full resize-none rounded-[6px] border border-border bg-card px-3 py-2 text-[13px] leading-relaxed text-card-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            />
+          </div>
         </div>
       )}
     </aside>
