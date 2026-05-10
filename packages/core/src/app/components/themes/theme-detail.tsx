@@ -147,7 +147,7 @@ function renderBodyWithSwatches(body: string): ReactNode[] {
       <span
         key={`s${key}`}
         aria-hidden
-        className="mr-[0.25em] inline-block size-[0.85em] translate-y-[0.05em] rounded-[2px] align-middle ring-1 ring-foreground/15"
+        className="mr-[0.25em] -translate-y-[0.1em] inline-block size-[0.85em] rounded-[2px] align-middle ring-1 ring-foreground/15"
         style={{ background: hex }}
       />,
     );
