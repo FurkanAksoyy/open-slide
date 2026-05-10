@@ -39,6 +39,16 @@ export default [Cover, Body] satisfies Page[];
 - `meta.title` (optional) shows in the slide header. Default is the folder name.
 - The slide id is the kebab-case folder name. Pick something short and descriptive (`q2-roadmap`, `team-offsite-2026`).
 
+## Editing an existing slide
+
+A finished slide commonly runs 1000–1800 lines. When you only need to touch one page, **don't read the whole file** — locate the page first, then read just that range:
+
+```bash
+grep -n ": Page = " slides/<id>/index.tsx
+```
+
+This lists every `const Foo: Page = …` declaration with its line number. Read the target page with `Read` using `offset` + `limit` (~150 lines is usually enough to capture one page plus its helper components). Read the whole file only when you need cross-page context (palette audit, reordering, design const tweaks).
+
 ## Canvas
 
 Every page renders into a fixed **1920 × 1080** canvas. The framework scales it; you design as if the viewport is literally 1920×1080.
