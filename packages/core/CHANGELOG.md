@@ -1,5 +1,31 @@
 # @open-slide/core
 
+## 1.2.0
+
+### Minor Changes
+
+- [#84](https://github.com/1weiho/open-slide/pull/84) [`1cbbd28`](https://github.com/1weiho/open-slide/commit/1cbbd2847b96db86d962f3fecd1fc01a39cbf4fb) Thanks [@1weiho](https://github.com/1weiho)! - Publish the user's current slide, page, and inspector-selected element to `node_modules/.open-slide/current.json` whenever they navigate or pick an element, and add a `current-slide` skill that teaches agents to resolve references like "this page" or "this element". Surface this in the dev UI with a live "Agent connected" badge in the slide header and an "Agent is watching" badge in the inspector panel; rename the inspector comments section from "note" to "comment" terminology to match the existing `@slide-comment` / `apply-comments` vocabulary.
+
+- [#82](https://github.com/1weiho/open-slide/pull/82) [`ce30d40`](https://github.com/1weiho/open-slide/commit/ce30d407e6e953b92b1039bb94aeabb58b0bd71b) Thanks [@1weiho](https://github.com/1weiho)! - Add a dev-mode notes drawer at the bottom of the slide view for editing speaker notes per page; autosaves to the slide source and creates `export const notes` if missing.
+
+- [#81](https://github.com/1weiho/open-slide/pull/81) [`6922cda`](https://github.com/1weiho/open-slide/commit/6922cdafb902f2b72b9f6b84c276513b2c809668) Thanks [@1weiho](https://github.com/1weiho)! - Add a right-click context menu to thumbnail rail entries with Duplicate and Delete actions, and focus the dragged thumbnail's page on the canvas when reordering starts.
+
+### Patch Changes
+
+- [#87](https://github.com/1weiho/open-slide/pull/87) [`f031771`](https://github.com/1weiho/open-slide/commit/f0317712b9fa084300b82f17c0e39328dc448f77) Thanks [@1weiho](https://github.com/1weiho)! - Tell the `current-slide` skill to re-read `current.json` on every deictic turn, so follow-up edits don't keep targeting the slide the user just navigated away from.
+
+- [#80](https://github.com/1weiho/open-slide/pull/80) [`e922131`](https://github.com/1weiho/open-slide/commit/e92213186fcd79b98f320bf9e64e7719501e3849) Thanks [@1weiho](https://github.com/1weiho)! - Show a loading indicator on the home page while the folders manifest resolves so slides from other folders no longer flash in the draft view on refresh.
+
+- [#77](https://github.com/1weiho/open-slide/pull/77) [`b6613a6`](https://github.com/1weiho/open-slide/commit/b6613a615b0db95ba0a4bad0a62a05b1a5f787fc) Thanks [@1weiho](https://github.com/1weiho)! - Allow resizing the crop rectangle in the image Crop dialog (Fill mode) and add a crop icon to the inspector Crop button.
+
+- [#86](https://github.com/1weiho/open-slide/pull/86) [`d7e1abd`](https://github.com/1weiho/open-slide/commit/d7e1abd0e0d95969a447ebe9ffd7aa2c82a74ec4) Thanks [@1weiho](https://github.com/1weiho)! - Force `cursor: default` and disable text selection across the present player so slide text no longer shows the I-beam, and keep the system cursor hidden over the edge prev/next buttons while the laser pointer is active.
+
+- [#85](https://github.com/1weiho/open-slide/pull/85) [`bcc8420`](https://github.com/1weiho/open-slide/commit/bcc8420d658ff280b30aa5d575cec50dd6b65a13) Thanks [@1weiho](https://github.com/1weiho)! - Make the present overview thumbnail cards hug the preview width instead of stretching to fill the row.
+
+- [#83](https://github.com/1weiho/open-slide/pull/83) [`be26a12`](https://github.com/1weiho/open-slide/commit/be26a127132569c8a83edc266d11503e095e77d8) Thanks [@1weiho](https://github.com/1weiho)! - Reorder the `notes` export alongside the page array when slides are dragged in the thumbnail rail, so speaker notes stay attached to their slides.
+
+- [#79](https://github.com/1weiho/open-slide/pull/79) [`d97b786`](https://github.com/1weiho/open-slide/commit/d97b786b29051dc79a35d9f3be6b685bc9db1c00) Thanks [@1weiho](https://github.com/1weiho)! - Tell agents to render repeated slide elements as explicit `<Component />` instances instead of `array.map`, so the inspector can edit each one independently.
+
 ## 1.1.0
 
 ### Minor Changes

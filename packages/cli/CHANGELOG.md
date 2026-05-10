@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 1.1.1
+
+### Patch Changes
+
+- [#87](https://github.com/1weiho/open-slide/pull/87) [`f031771`](https://github.com/1weiho/open-slide/commit/f0317712b9fa084300b82f17c0e39328dc448f77) Thanks [@1weiho](https://github.com/1weiho)! - Tell the `current-slide` skill to re-read `current.json` on every deictic turn, so follow-up edits don't keep targeting the slide the user just navigated away from.
+
 ## 1.1.0
 
 ### Minor Changes
