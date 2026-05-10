@@ -49,12 +49,16 @@ export async function uploadWithAutoRename(
   slideId: string,
   file: File,
 ): Promise<{ ok: boolean; status: number; entry: AssetEntry | null }> {
-  let res = await uploadAsset(slideId, file);
-  let uploaded = file;
+  // Vite's default `assetsInclude` matches asset extensions case-sensitively,
+  // so `<img src="./assets/foo.JPG" />` (which the placeholder edit rewrites
+  // into a real `import`) fails to parse. Lowercase the extension so the
+  // import path is always one Vite recognizes.
+  let uploaded = lowercaseExtension(file);
+  let res = await uploadAsset(slideId, uploaded);
   if (res.status === 409) {
     const list = await listAssets(slideId);
     const taken = new Set(list.map((a) => a.name));
-    uploaded = renamedCopy(file, taken);
+    uploaded = renamedCopy(uploaded, taken);
     res = await uploadAsset(slideId, uploaded);
   }
   if (!res.ok) return { ok: false, status: res.status, entry: null };
@@ -67,6 +71,18 @@ export async function uploadWithAutoRename(
     url: body?.url ?? `/__assets/${slideId}/${encodeURIComponent(uploaded.name)}`,
   };
   return { ok: true, status: res.status, entry };
+}
+
+function lowercaseExtension(file: File): File {
+  const dot = file.name.lastIndexOf('.');
+  if (dot <= 0) return file;
+  const ext = file.name.slice(dot);
+  const lower = ext.toLowerCase();
+  if (ext === lower) return file;
+  return new File([file], file.name.slice(0, dot) + lower, {
+    type: file.type,
+    lastModified: file.lastModified,
+  });
 }
 
 export function renamedCopy(file: File, taken: Set<string>): File {
