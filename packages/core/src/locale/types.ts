@@ -380,5 +380,7 @@ export type Locale = {
     openThemeAria: string;
     usedBy: string;
     usedByEmpty: string;
+    expandPromptAria: string;
+    collapsePromptAria: string;
   };
 };

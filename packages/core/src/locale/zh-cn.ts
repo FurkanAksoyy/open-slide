@@ -355,5 +355,7 @@ export const zhCN: Locale = {
     openThemeAria: '打开主题 {name}',
     usedBy: '使用此主题的 slides',
     usedByEmpty: '尚未有 slides 使用此主题。',
+    expandPromptAria: '展开 prompt',
+    collapsePromptAria: '收起 prompt',
   },
 };

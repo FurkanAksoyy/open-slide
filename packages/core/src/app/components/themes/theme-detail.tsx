@@ -1,8 +1,9 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Fragment, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { format, useLocale } from '@/lib/use-locale';
+import { cn } from '@/lib/utils';
 import type { SlideModule } from '../../lib/sdk';
 import { loadSlide, slidesByTheme } from '../../lib/slides';
 import { loadThemeDemo, type ThemeDemoModule, themes } from '../../lib/themes';
@@ -32,6 +33,18 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
   const pages = demo?.default ?? [];
   const totalPages = pages.length;
   const usedBySlideIds = useMemo(() => (theme ? slidesByTheme(theme.id) : []), [theme]);
+
+  const promptRef = useRef<HTMLPreElement>(null);
+  const [promptExpanded, setPromptExpanded] = useState(false);
+  const [promptOverflows, setPromptOverflows] = useState(false);
+
+  const themeBody = theme?.body;
+  useEffect(() => {
+    setPromptExpanded(false);
+    const el = promptRef.current;
+    if (!el || !themeBody) return;
+    setPromptOverflows(el.scrollHeight > PROMPT_COLLAPSED_PX + 8);
+  }, [themeBody]);
 
   useEffect(() => {
     if (totalPages <= 1) return;
@@ -125,9 +138,42 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
             ) : null}
           </div>
 
-          <pre className="w-full overflow-auto rounded-[8px] border border-hairline bg-card p-4 font-mono text-[11.5px] leading-relaxed text-foreground/90">
-            {renderBodyWithSwatches(theme.body)}
-          </pre>
+          <div className="relative">
+            <pre
+              ref={promptRef}
+              style={
+                promptOverflows && !promptExpanded ? { maxHeight: PROMPT_COLLAPSED_PX } : undefined
+              }
+              className={cn(
+                'w-full rounded-[8px] border border-hairline bg-card p-4 font-mono text-[11.5px] leading-relaxed text-foreground/90',
+                promptOverflows && !promptExpanded ? 'overflow-hidden' : 'overflow-auto',
+              )}
+            >
+              {renderBodyWithSwatches(theme.body)}
+            </pre>
+            {promptOverflows && !promptExpanded ? (
+              <button
+                type="button"
+                aria-label={t.themes.expandPromptAria}
+                onClick={() => setPromptExpanded(true)}
+                className="absolute inset-x-0 bottom-0 flex h-24 items-end justify-center rounded-b-[8px] bg-gradient-to-t from-card via-card/85 to-transparent pb-3 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ChevronDown className="size-4" />
+              </button>
+            ) : null}
+            {promptOverflows && promptExpanded ? (
+              <div className="mt-2 flex justify-center">
+                <button
+                  type="button"
+                  aria-label={t.themes.collapsePromptAria}
+                  onClick={() => setPromptExpanded(false)}
+                  className="flex size-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <ChevronDown className="size-4 rotate-180" />
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <aside className="flex min-w-0 flex-col gap-4">
@@ -199,6 +245,8 @@ function ThemeSlideCard({ id }: { id: string }) {
     </Link>
   );
 }
+
+const PROMPT_COLLAPSED_PX = 320;
 
 const HEX_RE = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})\b/g;
 

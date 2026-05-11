@@ -360,5 +360,7 @@ export const ja: Locale = {
     openThemeAria: 'テーマ {name} を開く',
     usedBy: 'このテーマを使うスライド',
     usedByEmpty: 'このテーマを使うスライドはまだありません。',
+    expandPromptAria: 'プロンプトを展開',
+    collapsePromptAria: 'プロンプトを折りたたむ',
   },
 };

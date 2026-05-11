@@ -355,5 +355,7 @@ export const en: Locale = {
     openThemeAria: 'Open theme {name}',
     usedBy: 'Slides using this theme',
     usedByEmpty: 'No slides use this theme yet.',
+    expandPromptAria: 'Expand prompt',
+    collapsePromptAria: 'Collapse prompt',
   },
 };
