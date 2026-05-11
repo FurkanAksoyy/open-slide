@@ -99,7 +99,7 @@ function FeatureCell({
   );
 }
 
-const AGENT_LOOP_DURATION = 9;
+const AGENT_LOOP_DURATION = 10;
 const COMMENT_TEXT = 'use the accent color on this title';
 
 function AgentApplyVisual() {
@@ -121,7 +121,7 @@ function AgentApplyVisual() {
     typingProgress.set(0);
     const controls = animate(typingProgress, [0, 0, 1, 1, 0, 0], {
       duration: AGENT_LOOP_DURATION,
-      times: [0, 0.22, 0.5, 0.55, 0.58, 1],
+      times: [0, 0.3, 0.52, 0.78, 0.82, 1],
       ease: 'linear',
       repeat: Infinity,
     });
@@ -165,7 +165,7 @@ function AgentApplyVisual() {
                       }
                     : { opacity: 1, scale: 1 }
                 }
-                transition={loopTransition([0, 0.06, 0.13, 0.89, 0.94, 1])}
+                transition={loopTransition([0, 0.11, 0.14, 0.86, 0.92, 1])}
               />
               <motion.span
                 className="relative font-[family-name:var(--font-sans)] font-semibold tracking-[-0.035em] leading-[1.0]"
@@ -184,7 +184,7 @@ function AgentApplyVisual() {
                       }
                     : { color: 'var(--color-text)' }
                 }
-                transition={loopTransition([0, 0.66, 0.72, 0.83, 0.89, 1])}
+                transition={loopTransition([0, 0.7, 0.74, 0.86, 0.92, 1])}
               >
                 Q2 Launch
               </motion.span>
@@ -197,7 +197,42 @@ function AgentApplyVisual() {
             </span>
           </div>
 
-          {/* floating /apply-comments hint pill (appears after submit) */}
+          {/* crosshair cursor — flies in, clicks Q2 Launch, fades */}
+          <motion.svg
+            aria-hidden
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#3b82f6"
+            strokeWidth={1.6}
+            strokeLinecap="round"
+            className="absolute pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
+            style={{
+              left: '7cqw',
+              top: 'calc(50% - 1.5cqw)',
+              width: '3cqw',
+              height: '3cqw',
+            }}
+            animate={
+              active
+                ? {
+                    opacity: [0, 0, 1, 1, 1, 0, 0],
+                    x: ['14cqw', '14cqw', '0cqw', '0cqw', '0cqw', '0cqw', '0cqw'],
+                    y: ['7cqw', '7cqw', '0cqw', '0cqw', '0cqw', '0cqw', '0cqw'],
+                    scale: [1, 1, 1, 0.78, 1, 1, 1],
+                  }
+                : { opacity: 0 }
+            }
+            transition={loopTransition([0, 0.02, 0.1, 0.115, 0.13, 0.16, 1])}
+          >
+            <title>cursor</title>
+            <line x1="12" y1="2" x2="12" y2="9" />
+            <line x1="12" y1="15" x2="12" y2="22" />
+            <line x1="2" y1="12" x2="9" y2="12" />
+            <line x1="15" y1="12" x2="22" y2="12" />
+            <circle cx="12" cy="12" r="2.5" fill="#3b82f6" fillOpacity={0.25} />
+          </motion.svg>
+
+          {/* "Agent applying..." status pill — appears after submit, fades before style change settles */}
           <motion.div
             className="absolute right-[1.5cqw] bottom-[1.5cqw] inline-flex items-center gap-[0.55cqw] rounded-full border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] font-[family-name:var(--font-sans)] text-[color:var(--color-text)] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)]"
             style={{ padding: '0.55cqw 0.9cqw', fontSize: '1.05cqw' }}
@@ -205,39 +240,24 @@ function AgentApplyVisual() {
               active
                 ? {
                     opacity: [0, 0, 1, 1, 0, 0],
-                    y: ['50%', '50%', '0%', '0%', '50%', '50%'],
+                    y: ['40%', '40%', '0%', '0%', '40%', '40%'],
                   }
-                : { opacity: 1, y: '0%' }
+                : { opacity: 0, y: '40%' }
             }
-            transition={loopTransition([0, 0.55, 0.62, 0.83, 0.89, 1])}
+            transition={loopTransition([0, 0.55, 0.6, 0.78, 0.82, 1])}
           >
-            <CommentGlyph />
-            <span style={{ color: 'var(--color-muted)' }}>Run</span>
-            <motion.span
-              className="rounded-[3px] font-[family-name:var(--font-mono)] text-[color:var(--color-text)]"
-              style={{ padding: '0.15cqw 0.5cqw', fontSize: '0.95cqw' }}
-              animate={
-                active
-                  ? {
-                      backgroundColor: [
-                        'var(--color-panel)',
-                        'var(--color-panel)',
-                        'color-mix(in oklab, var(--color-accent) 32%, var(--color-panel))',
-                        'var(--color-panel)',
-                        'var(--color-panel)',
-                      ],
-                    }
-                  : { backgroundColor: 'var(--color-panel)' }
-              }
-              transition={loopTransition([0, 0.62, 0.66, 0.7, 1])}
-            >
-              /apply-comments
-            </motion.span>
+            <SpinnerGlyph active={active} />
+            <span style={{ color: 'var(--color-muted)' }}>Agent applying</span>
+            <ApplyingDots active={active} />
           </motion.div>
         </div>
 
-        {/* InspectorPanel — right side */}
-        <div className="border-l border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] flex flex-col overflow-hidden">
+        {/* InspectorPanel — slides in from the right after click */}
+        <motion.div
+          className="border-l border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] flex flex-col overflow-hidden"
+          animate={active ? { x: ['100%', '100%', '0%', '0%', '100%', '100%'] } : { x: '0%' }}
+          transition={loopTransition([0, 0.15, 0.24, 0.86, 0.93, 1])}
+        >
           {/* header */}
           <div
             className="border-b border-[color:var(--color-rule)] flex items-center justify-between"
@@ -305,14 +325,14 @@ function AgentApplyVisual() {
                       boxShadow: '0 0 0 0 transparent',
                     }
               }
-              transition={loopTransition([0, 0.14, 0.2, 0.55, 0.58, 1])}
+              transition={loopTransition([0, 0.25, 0.3, 0.78, 0.82, 1])}
             >
               <motion.span
                 aria-hidden
                 className="absolute pointer-events-none text-[color:var(--color-muted)]"
                 style={{ left: '0.8cqw', top: '0.7cqw' }}
                 animate={active ? { opacity: [1, 1, 0, 0, 1, 1] } : { opacity: 0 }}
-                transition={loopTransition([0, 0.2, 0.22, 0.55, 0.58, 1])}
+                transition={loopTransition([0, 0.28, 0.3, 0.78, 0.82, 1])}
               >
                 Add a note...
               </motion.span>
@@ -326,7 +346,7 @@ function AgentApplyVisual() {
                   marginLeft: '0.15cqw',
                 }}
                 animate={active ? { opacity: [0, 0, 1, 1, 0, 0] } : { opacity: 0 }}
-                transition={loopTransition([0, 0.22, 0.24, 0.55, 0.57, 1])}
+                transition={loopTransition([0, 0.28, 0.3, 0.54, 0.56, 1])}
               />
             </motion.div>
             <div className="flex items-center justify-between" style={{ marginTop: '0.7cqw' }}>
@@ -340,32 +360,62 @@ function AgentApplyVisual() {
                 className="inline-flex items-center font-[family-name:var(--font-sans)] font-medium text-[color:var(--color-brand-foreground,white)] rounded-[4px] bg-[color:var(--color-accent)]"
                 style={{ fontSize: '1.1cqw', padding: '0.45cqw 0.9cqw' }}
                 animate={active ? { scale: [1, 1, 0.94, 1, 1] } : { scale: 1 }}
-                transition={loopTransition([0, 0.5, 0.53, 0.56, 1])}
+                transition={loopTransition([0, 0.52, 0.54, 0.57, 1])}
               >
                 Add comment
               </motion.span>
             </div>
           </PanelSection>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
 }
 
-function CommentGlyph() {
+function SpinnerGlyph({ active }: { active: boolean }) {
   return (
-    <svg
+    <motion.svg
       aria-hidden
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
+      stroke="var(--color-accent)"
+      strokeWidth={2.2}
       strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ width: '1.4cqw', height: '1.4cqw' }}
+      style={{ width: '1.3cqw', height: '1.3cqw' }}
+      animate={active ? { rotate: 360 } : { rotate: 0 }}
+      transition={active ? { duration: 1.1, repeat: Infinity, ease: 'linear' } : undefined}
     >
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
+      <title>spinner</title>
+      <path d="M21 12a9 9 0 1 1-9-9" />
+    </motion.svg>
+  );
+}
+
+function ApplyingDots({ active }: { active: boolean }) {
+  return (
+    <span
+      className="inline-flex items-end gap-[0.15cqw] text-[color:var(--color-muted)]"
+      style={{ width: '1.8cqw' }}
+    >
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          key={i}
+          className="inline-block rounded-full bg-current"
+          style={{ width: '0.32cqw', height: '0.32cqw' }}
+          animate={active ? { opacity: [0.25, 1, 0.25] } : { opacity: 0.5 }}
+          transition={
+            active
+              ? {
+                  duration: 1.1,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: i * 0.18,
+                }
+              : undefined
+          }
+        />
+      ))}
+    </span>
   );
 }
 
