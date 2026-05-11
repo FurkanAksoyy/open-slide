@@ -201,6 +201,9 @@ export const zhCN: Locale = {
     agentWatching: 'Agent 正在关注',
     agentWatchingTooltip:
       'Agent 已经通过 dev server 看到你选的元素了，直接到聊天请它修改就行。想累积几个再一次问才需要在这里留 comments。',
+    agentNotWatching: 'Agent 没在关注',
+    agentNotWatchingTooltip:
+      '已和 dev server 断开连接，agent 看不到你选的元素了。请重新启动 dev server 来恢复连接。',
     leaveComment: '留个 comment',
     commentPlaceholder: '描述你希望代理执行的更改…',
     commentShortcutHint: '⌘↵ 添加',

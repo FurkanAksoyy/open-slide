@@ -202,6 +202,9 @@ export const ja: Locale = {
     agentWatching: 'エージェント監視中',
     agentWatchingTooltip:
       'エージェントは選択中の要素を dev server 経由で把握しています。直接チャットで頼めます。ここにコメントを残すのは、複数の依頼をまとめて出したいときだけで OK。',
+    agentNotWatching: 'エージェント未接続',
+    agentNotWatchingTooltip:
+      'dev server との接続が切れたため、選択中の要素がエージェントに見えなくなっています。dev server を再起動して接続を復旧してください。',
     leaveComment: 'コメントを残す',
     commentPlaceholder: 'エージェントに依頼する変更を記述…',
     commentShortcutHint: '⌘↵ で追加',

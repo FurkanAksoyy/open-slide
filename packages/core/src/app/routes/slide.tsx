@@ -26,6 +26,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFolders } from '@/lib/folders';
+import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
@@ -705,23 +706,6 @@ function AgentConnectedBadge() {
       </Tooltip>
     </TooltipProvider>
   );
-}
-
-function useAgentSocketConnected() {
-  const [connected, setConnected] = useState(true);
-  useEffect(() => {
-    const hot = import.meta.hot;
-    if (!hot) return;
-    const onConnect = () => setConnected(true);
-    const onDisconnect = () => setConnected(false);
-    hot.on('vite:ws:connect', onConnect);
-    hot.on('vite:ws:disconnect', onDisconnect);
-    return () => {
-      hot.off('vite:ws:connect', onConnect);
-      hot.off('vite:ws:disconnect', onDisconnect);
-    };
-  }, []);
-  return connected;
 }
 
 function SelectionReporter() {

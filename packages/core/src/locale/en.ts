@@ -165,6 +165,9 @@ export const en: Locale = {
     agentWatching: 'Agent is watching',
     agentWatchingTooltip:
       'Your agent already sees the selected element via the dev server — just ask it in chat. Leave comments here only when you want to queue a few before asking.',
+    agentNotWatching: 'Agent not watching',
+    agentNotWatchingTooltip:
+      'Lost connection to the dev server, so your agent can no longer see the selected element. Restart the dev server to restore the connection.',
     contentSection: 'Content',
     typographySection: 'Typography',
     colorSection: 'Color',

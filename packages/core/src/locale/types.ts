@@ -167,6 +167,8 @@ export type Locale = {
     deselect: string;
     agentWatching: string;
     agentWatchingTooltip: string;
+    agentNotWatching: string;
+    agentNotWatchingTooltip: string;
     contentSection: string;
     typographySection: string;
     colorSection: string;
