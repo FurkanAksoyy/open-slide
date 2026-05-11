@@ -52,7 +52,6 @@ export type Locale = {
     nothingMatchesSuffix: string;
     noSlidesYet: string;
     createSlideHintPrefix: string;
-    createSlideHintMid: string;
     createSlideHintSuffix: string;
     folderEmptyTitle: string;
     folderEmptyHint: string;

@@ -337,11 +337,7 @@ function EmptyState({ isDraft, folderName }: { isDraft: boolean; folderName?: st
             <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
               {t.home.createSlideHintPrefix}
               <code className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[11.5px] text-foreground">
-                slides/my-slide/index.tsx
-              </code>
-              {t.home.createSlideHintMid}
-              <code className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[11.5px] text-foreground">
-                export default [Page1, Page2]
+                /create-slide
               </code>
               {t.home.createSlideHintSuffix}
             </p>
