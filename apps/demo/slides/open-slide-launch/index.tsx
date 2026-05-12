@@ -18,7 +18,11 @@ const tokens = {
   accent: '#ff4f1a',
   cream: '#fffdf6',
   mono: "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace",
+  serif: "'Iowan Old Style', 'New York', 'Times New Roman', Georgia, serif",
 } as const;
+
+const EASE_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)';
+const EASE_POP = 'cubic-bezier(0.2, 1.1, 0.3, 1)';
 
 const fill: CSSProperties = {
   width: '100%',
@@ -75,6 +79,14 @@ const keyframes = `
   100% { transform: translate(0, 0); }
 }
 @keyframes mFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mRise {
+  0%   { opacity: 0; transform: translateY(28px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes mReveal {
+  0%   { opacity: 0; transform: translateY(36px); filter: blur(8px); }
+  100% { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
 `;
 
 /* ───────────────── Helpers ───────────────── */
@@ -141,6 +153,109 @@ const Bar = ({
   />
 );
 
+const Serif = ({
+  children,
+  color = tokens.accent,
+}: {
+  children: React.ReactNode;
+  color?: string;
+}) => (
+  <em
+    style={{
+      fontFamily: tokens.serif,
+      fontStyle: 'italic',
+      fontWeight: 400,
+      letterSpacing: '-0.025em',
+      color,
+    }}
+  >
+    {children}
+  </em>
+);
+
+const Grain = ({
+  tint = 'dark',
+  opacity = 0.06,
+}: {
+  tint?: 'dark' | 'light';
+  opacity?: number;
+}) => (
+  <svg
+    aria-hidden
+    style={{
+      position: 'absolute',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      opacity,
+      mixBlendMode: tint === 'light' ? 'screen' : 'multiply',
+      pointerEvents: 'none',
+    }}
+  >
+    <title>grain</title>
+    <filter id="m-grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.92" numOctaves="2" seed="9" />
+      <feColorMatrix
+        type="matrix"
+        values={
+          tint === 'light'
+            ? '0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'
+            : '0 0 0 0 0.04  0 0 0 0 0.04  0 0 0 0 0.04  0 0 0 0.55 0'
+        }
+      />
+    </filter>
+    <rect width="100%" height="100%" filter="url(#m-grain)" />
+  </svg>
+);
+
+const Brand = ({
+  tone = 'ink',
+  index,
+  total = 7,
+  delay = 1800,
+}: {
+  tone?: 'ink' | 'paper';
+  index: number;
+  total?: number;
+  delay?: number;
+}) => {
+  const ink = tone === 'paper' ? tokens.paper : tokens.ink;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: 140,
+        right: 140,
+        bottom: 56,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontFamily: tokens.mono,
+        fontSize: 16,
+        letterSpacing: '0.22em',
+        textTransform: 'uppercase',
+        color: ink,
+        opacity: 0.55,
+        animation: `mFade 800ms ease ${delay}ms both`,
+        pointerEvents: 'none',
+      }}
+    >
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+        <span
+          aria-hidden
+          style={{ width: 6, height: 6, borderRadius: '50%', background: tokens.accent }}
+        />
+        open-slide
+      </span>
+      <span style={{ fontVariantNumeric: 'tabular-nums', display: 'inline-flex', gap: 6 }}>
+        <span style={{ opacity: 1 }}>{String(index).padStart(2, '0')}</span>
+        <span style={{ opacity: 0.45 }}>/</span>
+        <span style={{ opacity: 0.6 }}>{String(total).padStart(2, '0')}</span>
+      </span>
+    </div>
+  );
+};
+
 /* ─────────────────────── 1. Introducing ─────────────────────── */
 
 const Cover: Page = () => (
@@ -156,17 +271,20 @@ const Cover: Page = () => (
     }}
   >
     <style>{keyframes}</style>
+    <Grain />
 
-    {/* Top + bottom rules push in from opposite sides */}
-    <Bar
-      color={tokens.accent}
-      delay={80}
-      origin="left"
-      style={{ position: 'absolute', top: 96, left: 140, right: 140, height: 6 }}
-    />
+    {/* Top hairline + bottom chunky rule — paired editorial weight */}
     <Bar
       color={tokens.ink}
-      delay={220}
+      delay={120}
+      duration={1100}
+      origin="left"
+      style={{ position: 'absolute', top: 96, left: 140, right: 140, height: 1, opacity: 0.65 }}
+    />
+    <Bar
+      color={tokens.accent}
+      delay={260}
+      duration={1100}
       origin="right"
       style={{ position: 'absolute', bottom: 96, left: 140, right: 140, height: 6 }}
     />
@@ -175,15 +293,19 @@ const Cover: Page = () => (
     <div
       style={{
         fontFamily: tokens.mono,
-        fontSize: 26,
+        fontSize: 18,
         letterSpacing: '0.42em',
         textTransform: 'uppercase',
         color: tokens.accent,
-        marginBottom: 64,
-        animation: 'mWipeR 800ms cubic-bezier(0.7, 0, 0.2, 1) 260ms both',
+        marginBottom: 56,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 16,
+        animation: `mWipeR 900ms ${EASE_OUT} 360ms both`,
       }}
     >
-      Introducing ——
+      <span aria-hidden style={{ width: 28, height: 1, background: tokens.accent }} />
+      Introducing — v0.1
     </div>
 
     {/* Logo + wordmark lockup */}
@@ -198,72 +320,75 @@ const Cover: Page = () => (
       <div
         style={{
           flexShrink: 0,
-          animation: 'mPop 800ms cubic-bezier(0.2, 1.1, 0.3, 1) 520ms both',
+          animation: `mPop 900ms ${EASE_POP} 620ms both`,
         }}
       >
         <img
           src={openSlide}
           alt="open-slide square logo mark"
-          style={{ width: 260, height: 260, objectFit: 'cover' }}
+          style={{ width: 280, height: 280, objectFit: 'cover' }}
         />
       </div>
 
       <div
         style={{
-          fontSize: '166px',
+          fontSize: '184px',
           fontWeight: 900,
-          letterSpacing: '-0.05em',
-          lineHeight: 0.92,
+          letterSpacing: '-0.055em',
+          lineHeight: 0.9,
           margin: 0,
           display: 'flex',
           overflowY: 'hidden',
-          paddingBottom: 12,
+          paddingBottom: 16,
           paddingRight: 24,
         }}
       >
-        <Letters text="open-slide" delay={780} step={42} duration={720} />
+        <Letters text="open-slide" delay={900} step={52} duration={840} ease={EASE_OUT} />
       </div>
     </div>
 
     {/* Tagline */}
     <div
       style={{
-        fontSize: 76,
+        fontSize: 84,
         fontWeight: 700,
-        letterSpacing: '-0.03em',
-        lineHeight: 1.06,
+        letterSpacing: '-0.035em',
+        lineHeight: 1.04,
         margin: 0,
-        maxWidth: 1500,
+        maxWidth: 1520,
       }}
     >
       <div style={{ overflow: 'hidden' }}>
-        <Letters text="A slide framework " delay={1500} step={26} />
+        <Letters text="A slide framework " delay={1700} step={28} duration={780} ease={EASE_OUT} />
       </div>
-      <div style={{ overflow: 'hidden', marginTop: 4 }}>
-        <Letters text="built for " delay={1820} step={26} />
-        <span style={{ position: 'relative', display: 'inline-block' }}>
-          <Letters
-            text="agents."
-            delay={2080}
-            step={30}
-            style={{ color: tokens.accent, fontStyle: 'italic' }}
-          />
+      <div style={{ overflow: 'hidden', marginTop: 4, display: 'flex', alignItems: 'baseline' }}>
+        <Letters text="built for " delay={2080} step={28} duration={780} ease={EASE_OUT} />
+        <span
+          style={{
+            position: 'relative',
+            display: 'inline-block',
+            animation: `mReveal 1000ms ${EASE_OUT} 2360ms both`,
+          }}
+        >
+          <Serif>agents.</Serif>
           <Bar
             color={tokens.accent}
-            delay={2520}
-            duration={600}
+            delay={2820}
+            duration={900}
             origin="left"
             style={{
               position: 'absolute',
               left: 0,
               right: 0,
-              bottom: 6,
-              height: 6,
+              bottom: 4,
+              height: 4,
             }}
           />
         </span>
       </div>
     </div>
+
+    <Brand index={1} delay={3400} />
   </div>
 );
 
@@ -283,36 +408,37 @@ const Skill: Page = () => (
     }}
   >
     <style>{keyframes}</style>
+    <Grain tint="light" opacity={0.04} />
 
-    {/* Sliding ink bar that wipes across, then text overlays */}
+    {/* Top accent bar — sweeps across the top edge */}
     <Bar
       color={tokens.accent}
       delay={0}
-      duration={650}
+      duration={900}
       origin="left"
       style={{
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        height: 14,
+        height: 8,
       }}
     />
 
-    {/* Big ghost text behind */}
+    {/* Big ghost numeral behind */}
     <div
       style={{
         position: 'absolute',
-        top: 80,
+        top: 40,
         left: -40,
-        fontSize: 480,
+        fontSize: 580,
         fontWeight: 900,
         color: 'transparent',
-        WebkitTextStroke: `2px rgba(246, 243, 236, 0.07)`,
-        letterSpacing: '-0.05em',
-        lineHeight: 0.85,
+        WebkitTextStroke: `2px rgba(246, 243, 236, 0.08)`,
+        letterSpacing: '-0.06em',
+        lineHeight: 0.82,
         userSelect: 'none',
-        animation: 'mFade 1200ms ease 200ms both',
+        animation: `mFade 1600ms ease 400ms both`,
       }}
     >
       01
@@ -322,22 +448,26 @@ const Skill: Page = () => (
     <div
       style={{
         fontFamily: tokens.mono,
-        fontSize: 24,
+        fontSize: 18,
         letterSpacing: '0.42em',
         textTransform: 'uppercase',
         color: tokens.accent,
-        marginBottom: 36,
-        animation: 'mWipeR 800ms cubic-bezier(0.7, 0, 0.2, 1) 280ms both',
+        marginBottom: 32,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 16,
+        animation: `mWipeR 900ms ${EASE_OUT} 420ms both`,
       }}
     >
-      Skill ——
+      <span aria-hidden style={{ width: 28, height: 1, background: tokens.accent }} />
+      Skill — step 01
     </div>
 
     {/* Hero command */}
     <div
       style={{
         fontFamily: tokens.mono,
-        fontSize: '180px',
+        fontSize: '188px',
         fontWeight: 700,
         letterSpacing: '-0.05em',
         lineHeight: 1,
@@ -347,15 +477,22 @@ const Skill: Page = () => (
         gap: 8,
       }}
     >
-      <Letters text="/create-slide" delay={520} step={48} duration={780} anim="mSlamUp" />
+      <Letters
+        text="/create-slide"
+        delay={680}
+        step={56}
+        duration={860}
+        anim="mSlamUp"
+        ease={EASE_OUT}
+      />
       <span
         style={{
           display: 'inline-block',
           width: 26,
-          height: 180,
+          height: 188,
           background: tokens.accent,
           marginLeft: 18,
-          animation: 'mFade 220ms ease 1400ms both, mBlink 1s steps(1) 1600ms infinite',
+          animation: `mFade 240ms ease 1700ms both, mBlink 1s steps(1) 1900ms infinite`,
         }}
       />
     </div>
@@ -372,24 +509,25 @@ const Skill: Page = () => (
     >
       <Bar
         color={tokens.paper}
-        delay={1500}
-        duration={900}
+        delay={1800}
+        duration={1100}
         origin="left"
-        style={{ height: 4, flex: 1, opacity: 0.6 }}
+        style={{ height: 2, flex: 1, opacity: 0.4 }}
       />
       <div
         style={{
-          fontFamily: tokens.mono,
-          fontSize: 30,
+          fontSize: 32,
           color: tokens.paper,
-          opacity: 0.8,
+          opacity: 0.85,
           whiteSpace: 'nowrap',
-          animation: 'mWipeR 700ms cubic-bezier(0.7, 0, 0.2, 1) 1900ms both',
+          animation: `mRise 900ms ${EASE_OUT} 2200ms both`,
         }}
       >
-        tell the agent — it writes the deck.
+        tell the agent — <Serif color={tokens.paper}>it writes the deck.</Serif>
       </div>
     </div>
+
+    <Brand tone="paper" index={2} delay={3000} />
   </div>
 );
 
@@ -401,42 +539,49 @@ const Inspect: Page = () => {
     label,
     delay,
     accent = false,
+    serifTail,
   }: {
     n: string;
     label: string;
     delay: number;
     accent?: boolean;
+    serifTail?: React.ReactNode;
   }) => (
     <div
       style={{
         display: 'flex',
         alignItems: 'baseline',
-        gap: 36,
-        animation: `mSlamL 720ms cubic-bezier(0.2, 0.9, 0.25, 1) ${delay}ms both`,
+        gap: 40,
+        animation: `mRise 1000ms ${EASE_OUT} ${delay}ms both`,
       }}
     >
       <span
         style={{
           fontFamily: tokens.mono,
-          fontSize: 30,
+          fontSize: 22,
           letterSpacing: '0.32em',
           color: tokens.accent,
           width: 64,
           flexShrink: 0,
+          paddingTop: 8,
         }}
       >
         {n}
       </span>
       <span
         style={{
-          fontSize: 188,
+          fontSize: 196,
           fontWeight: 900,
           letterSpacing: '-0.045em',
           lineHeight: 0.96,
           color: accent ? tokens.accent : tokens.ink,
+          display: 'inline-flex',
+          alignItems: 'baseline',
+          gap: 14,
         }}
       >
         {label}
+        {serifTail}
       </span>
     </div>
   );
@@ -454,64 +599,141 @@ const Inspect: Page = () => {
       }}
     >
       <style>{keyframes}</style>
+      <Grain />
 
-      {/* Drifting accent square */}
+      {/* Inspector viewport motif: accent square + hairline ghost frame + crosshair tick */}
       <div
         style={{
           position: 'absolute',
-          top: 100,
+          top: 120,
           right: 140,
           width: 220,
           height: 220,
           background: tokens.accent,
-          animation:
-            'mPushL 700ms cubic-bezier(0.7, 0, 0.2, 1) 200ms both, mDrift 6s ease-in-out 1s infinite',
+          animation: `mPushL 900ms ${EASE_OUT} 320ms both, mDrift 6s ease-in-out 1.4s infinite`,
         }}
       />
       <div
         style={{
           position: 'absolute',
-          top: 100,
+          top: 120,
           right: 140,
           width: 220,
           height: 220,
-          border: `4px solid ${tokens.ink}`,
-          transform: 'translate(36px, 36px)',
-          animation: 'mFade 600ms ease 700ms both',
+          border: `1px solid ${tokens.ink}`,
+          transform: 'translate(40px, 40px)',
+          animation: `mFade 900ms ease 880ms both`,
         }}
       />
+      {/* corner brackets on the accent square */}
+      {(
+        [
+          [0, 0, '0deg'],
+          [220, 0, '90deg'],
+          [220, 220, '180deg'],
+          [0, 220, '270deg'],
+        ] as const
+      ).map(([dx, dy, rot], i) => (
+        <span
+          key={i}
+          style={{
+            position: 'absolute',
+            top: 120 + dy - 12,
+            right: 140 + (220 - dx) - 12,
+            width: 24,
+            height: 24,
+            borderTop: `2px solid ${tokens.ink}`,
+            borderLeft: `2px solid ${tokens.ink}`,
+            transform: `rotate(${rot})`,
+            animation: `mPop 600ms ${EASE_POP} ${1100 + i * 80}ms both`,
+          }}
+        />
+      ))}
+      {/* tiny mono coord readout under the viewport */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 120 + 220 + 24,
+          right: 140,
+          width: 220,
+          textAlign: 'right',
+          fontFamily: tokens.mono,
+          fontSize: 14,
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+          color: tokens.ink,
+          opacity: 0.55,
+          animation: `mFade 800ms ease 1500ms both`,
+        }}
+      >
+        x: 1442 · y: 86
+      </div>
 
-      <Step n="01" label="Inspect." delay={300} />
-      <div style={{ height: 32 }} />
-      <Step n="02" label="Comment." delay={620} />
-      <div style={{ height: 32 }} />
-      <Step n="03" label="Send →" delay={940} accent />
+      <Step n="01" label="Inspect." delay={400} />
+      <div style={{ height: 28 }} />
+      <Step n="02" label="Comment." delay={720} />
+      <div style={{ height: 28 }} />
+      <Step
+        n="03"
+        label="Send"
+        delay={1040}
+        accent
+        serifTail={<Serif color={tokens.accent}>→</Serif>}
+      />
 
       {/* Bottom strapline */}
       <div
         style={{
           position: 'absolute',
-          bottom: 100,
+          bottom: 140,
           left: 140,
           right: 140,
           display: 'flex',
           justifyContent: 'space-between',
-          fontFamily: tokens.mono,
-          fontSize: 24,
-          letterSpacing: '0.32em',
-          textTransform: 'uppercase',
+          alignItems: 'center',
+          fontSize: 26,
           color: tokens.ink,
-          animation: 'mFade 700ms ease 1500ms both',
+          animation: `mFade 900ms ease 1800ms both`,
         }}
       >
-        <span>Point at the canvas</span>
-        <span>The agent fixes it</span>
+        <span>
+          Point at the canvas <Serif>—</Serif>
+        </span>
+        <span style={{ opacity: 0.7 }}>the agent fixes it</span>
       </div>
+
+      <Brand index={3} delay={2200} />
     </div>
   );
 };
 
 /* ─────────────────────── 4. Visual Editor ─────────────────────── */
+
+const VisualCorner = ({
+  left,
+  top,
+  rot,
+  delay,
+}: {
+  left: number;
+  top: number;
+  rot: string;
+  delay: number;
+}) => (
+  <span
+    style={{
+      position: 'absolute',
+      left: left - 28,
+      top: top - 28,
+      width: 56,
+      height: 56,
+      borderTop: `4px solid ${tokens.ink}`,
+      borderLeft: `4px solid ${tokens.ink}`,
+      transform: `rotate(${rot})`,
+      animation: `mPop 600ms ${EASE_POP} ${delay}ms both`,
+    }}
+  />
+);
 
 const Visual: Page = () => (
   <div
@@ -532,40 +754,40 @@ const Visual: Page = () => (
     <Bar
       color={tokens.ink}
       delay={0}
-      duration={700}
+      duration={900}
       origin="left"
       style={{
         position: 'absolute',
-        top: 80,
+        top: 96,
         left: 0,
-        width: '38%',
-        height: 60,
+        width: '40%',
+        height: 48,
       }}
     />
     {/* Push-in ink slab from right (opposite line) */}
     <Bar
       color={tokens.ink}
-      delay={120}
-      duration={700}
+      delay={160}
+      duration={900}
       origin="right"
       style={{
         position: 'absolute',
-        bottom: 80,
+        bottom: 96,
         right: 0,
-        width: '38%',
-        height: 60,
+        width: '40%',
+        height: 48,
       }}
     />
 
     {/* "VISUAL" — wipes down (clip-path mask) */}
     <div
       style={{
-        fontSize: 360,
+        fontSize: 380,
         fontWeight: 900,
-        letterSpacing: '-0.05em',
-        lineHeight: 0.86,
+        letterSpacing: '-0.055em',
+        lineHeight: 0.84,
         paddingRight: 24,
-        animation: 'mWipeD 900ms cubic-bezier(0.7, 0, 0.2, 1) 360ms both',
+        animation: `mWipeD 1100ms ${EASE_OUT} 460ms both`,
       }}
     >
       VISUAL
@@ -575,15 +797,15 @@ const Visual: Page = () => (
     <div
       style={{
         position: 'relative',
-        height: 32,
-        width: '70%',
-        margin: '20px 0',
+        height: 28,
+        width: '64%',
+        margin: '18px 0',
       }}
     >
       <Bar
         color={tokens.paper}
-        delay={1000}
-        duration={650}
+        delay={1300}
+        duration={900}
         origin="left"
         style={{
           position: 'absolute',
@@ -595,13 +817,13 @@ const Visual: Page = () => (
     {/* "EDITOR" — wipes up */}
     <div
       style={{
-        fontSize: 360,
+        fontSize: 380,
         fontWeight: 900,
-        letterSpacing: '-0.05em',
-        lineHeight: 0.86,
+        letterSpacing: '-0.055em',
+        lineHeight: 0.84,
         paddingRight: 24,
         color: tokens.paper,
-        animation: 'mWipeU 900ms cubic-bezier(0.7, 0, 0.2, 1) 1200ms both',
+        animation: `mWipeU 1100ms ${EASE_OUT} 1500ms both`,
       }}
     >
       EDITOR
@@ -610,349 +832,446 @@ const Visual: Page = () => (
     {/* Caption — flows below EDITOR inside the centered flex stack */}
     <div
       style={{
-        marginTop: 36,
+        marginTop: 44,
         fontFamily: tokens.mono,
-        fontSize: 28,
+        fontSize: 22,
         letterSpacing: '0.42em',
         textTransform: 'uppercase',
         color: tokens.ink,
-        animation: 'mWipeR 700ms cubic-bezier(0.7, 0, 0.2, 1) 2100ms both',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 14,
+        animation: `mWipeR 900ms ${EASE_OUT} 2500ms both`,
       }}
     >
-      drag · resize · retype
+      drag{' '}
+      <span aria-hidden style={{ width: 14, height: 1, background: tokens.ink, opacity: 0.55 }} />
+      resize{' '}
+      <span aria-hidden style={{ width: 14, height: 1, background: tokens.ink, opacity: 0.55 }} />
+      retype
     </div>
 
     {/* Selection corner marks pinned to the canvas corners, clear of the bars */}
-    {(
-      [
-        [40, 40, '0deg'],
-        [1880, 40, '90deg'],
-        [40, 1040, '270deg'],
-        [1880, 1040, '180deg'],
-      ] as const
-    ).map(([x, y, rot], i) => (
-      <span
-        key={i}
-        style={{
-          position: 'absolute',
-          left: x - 24,
-          top: y - 24,
-          width: 48,
-          height: 48,
-          borderTop: `6px solid ${tokens.ink}`,
-          borderLeft: `6px solid ${tokens.ink}`,
-          transform: `rotate(${rot})`,
-          animation: `mPop 500ms cubic-bezier(0.2, 1.1, 0.3, 1) ${1700 + i * 90}ms both`,
-        }}
-      />
-    ))}
+    <VisualCorner left={40} top={40} rot="0deg" delay={2100} />
+    <VisualCorner left={1880} top={40} rot="90deg" delay={2200} />
+    <VisualCorner left={40} top={1040} rot="270deg" delay={2300} />
+    <VisualCorner left={1880} top={1040} rot="180deg" delay={2400} />
   </div>
 );
 
 /* ─────────────────────── 5. Design system ─────────────────────── */
 
-const DesignPanel: Page = () => {
-  const swatches = [
-    { name: 'BG', value: '#f6f3ec', text: tokens.ink },
-    { name: 'TEXT', value: '#0a0a0a', text: tokens.paper },
-    { name: 'ACCENT', value: '#ff4f1a', text: tokens.paper },
-    { name: 'MUTED', value: '#7a7468', text: tokens.paper },
-  ];
-  return (
+const Swatch = ({
+  name,
+  value,
+  hint,
+  text,
+  delay,
+}: {
+  name: string;
+  value: string;
+  hint: string;
+  text: string;
+  delay: number;
+}) => (
+  <div
+    style={{
+      flex: 1,
+      background: value,
+      color: text,
+      position: 'relative',
+      transformOrigin: 'bottom',
+      animation: `mSweepY 1000ms ${EASE_OUT} ${delay}ms both`,
+    }}
+  >
     <div
       style={{
-        ...fill,
-        background: tokens.paper,
-        color: tokens.ink,
+        position: 'absolute',
+        top: 88,
+        left: 40,
+        right: 40,
         display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+        animation: `mWipeR 900ms ${EASE_OUT} ${delay + 700}ms both`,
       }}
     >
-      <style>{keyframes}</style>
-
-      {/* Four full-height color stripes pushing up from below */}
-      <div style={{ display: 'flex', width: '100%', height: '100%' }}>
-        {swatches.map((s, i) => (
-          <div
-            key={s.name}
-            style={{
-              flex: 1,
-              background: s.value,
-              color: s.text,
-              position: 'relative',
-              transformOrigin: 'bottom',
-              animation: `mSweepY 720ms cubic-bezier(0.7, 0, 0.2, 1) ${100 + i * 110}ms both`,
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                top: 80,
-                left: 36,
-                right: 36,
-                fontFamily: tokens.mono,
-                fontSize: 22,
-                letterSpacing: '0.32em',
-                textTransform: 'uppercase',
-                animation: `mWipeR 600ms cubic-bezier(0.7, 0, 0.2, 1) ${700 + i * 110}ms both`,
-              }}
-            >
-              {s.name}
-            </div>
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 80,
-                left: 36,
-                right: 36,
-                fontFamily: tokens.mono,
-                fontSize: 28,
-                fontWeight: 600,
-                animation: `mSlamUp 600ms cubic-bezier(0.2, 0.9, 0.25, 1) ${900 + i * 110}ms both`,
-              }}
-            >
-              {s.value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Center title — slabs in */}
-      <div
+      <span aria-hidden style={{ height: 1, width: 32, background: text, opacity: 0.55 }} />
+      <span
         style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
+          fontFamily: tokens.mono,
+          fontSize: 16,
+          letterSpacing: '0.32em',
+          textTransform: 'uppercase',
+          opacity: 0.85,
         }}
       >
-        <div
-          style={{
-            background: tokens.paper,
-            color: tokens.ink,
-            padding: '36px 64px',
-            fontSize: 168,
-            fontWeight: 900,
-            letterSpacing: '-0.04em',
-            lineHeight: 0.95,
-            animation: 'mPop 800ms cubic-bezier(0.2, 1.1, 0.3, 1) 1500ms both',
-            boxShadow: `0 0 0 8px ${tokens.ink}`,
-          }}
-        >
-          DESIGN
-        </div>
-        <div
-          style={{
-            background: tokens.ink,
-            color: tokens.paper,
-            padding: '36px 64px',
-            fontSize: 168,
-            fontWeight: 900,
-            letterSpacing: '-0.04em',
-            lineHeight: 0.95,
-            marginTop: 16,
-            animation: 'mPop 800ms cubic-bezier(0.2, 1.1, 0.3, 1) 1700ms both',
-          }}
-        >
-          SYSTEM
-        </div>
+        {name}
+      </span>
+    </div>
+    <div
+      style={{
+        position: 'absolute',
+        bottom: 92,
+        left: 40,
+        right: 40,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        animation: `mRise 900ms ${EASE_OUT} ${delay + 950}ms both`,
+      }}
+    >
+      <span
+        style={{
+          fontFamily: tokens.mono,
+          fontSize: 26,
+          fontWeight: 600,
+          letterSpacing: '0.02em',
+        }}
+      >
+        {value}
+      </span>
+      <span
+        style={{
+          fontFamily: tokens.mono,
+          fontSize: 13,
+          letterSpacing: '0.24em',
+          textTransform: 'uppercase',
+          opacity: 0.55,
+        }}
+      >
+        {hint}
+      </span>
+    </div>
+  </div>
+);
+
+const DesignPanel: Page = () => (
+  <div
+    style={{
+      ...fill,
+      background: tokens.paper,
+      color: tokens.ink,
+      display: 'flex',
+    }}
+  >
+    <style>{keyframes}</style>
+
+    {/* Four full-height color stripes pushing up from below */}
+    <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+      <Swatch name="bg / paper" value="#F6F3EC" hint="canvas" text={tokens.ink} delay={120} />
+      <Swatch
+        name="ink / text"
+        value="#0A0A0A"
+        hint="primary type"
+        text={tokens.paper}
+        delay={240}
+      />
+      <Swatch
+        name="accent"
+        value="#FF4F1A"
+        hint="emphasis · italic serif"
+        text={tokens.paper}
+        delay={360}
+      />
+      <Swatch
+        name="muted"
+        value="#7A7468"
+        hint="captions · footers"
+        text={tokens.paper}
+        delay={480}
+      />
+    </div>
+
+    {/* Center title — slabs in, refined without the chunky box-shadow */}
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerEvents: 'none',
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          background: tokens.paper,
+          color: tokens.ink,
+          padding: '32px 64px',
+          fontSize: 168,
+          fontWeight: 900,
+          letterSpacing: '-0.045em',
+          lineHeight: 0.94,
+          animation: `mPop 900ms ${EASE_POP} 1700ms both`,
+          border: `1px solid ${tokens.ink}`,
+        }}
+      >
+        DESIGN
+      </div>
+      <div
+        style={{
+          background: tokens.ink,
+          color: tokens.paper,
+          padding: '32px 64px',
+          fontSize: 168,
+          fontWeight: 900,
+          letterSpacing: '-0.045em',
+          lineHeight: 0.94,
+          animation: `mPop 900ms ${EASE_POP} 1900ms both`,
+          display: 'inline-flex',
+          alignItems: 'baseline',
+          gap: 18,
+        }}
+      >
+        SYSTEM<Serif color={tokens.accent}>.</Serif>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 /* ─────────────────────── 6. Assets manager ─────────────────────── */
 
-const Assets: Page = () => {
-  const blocks = [
-    {
-      x: 140,
-      y: 120,
-      w: 360,
-      h: 220,
-      color: tokens.accent,
-      dx: '-200px',
-      dy: '-200px',
-      r: '-12deg',
-      delay: 200,
-    },
-    {
-      x: 540,
-      y: 90,
-      w: 480,
-      h: 280,
-      color: '#f5b85a',
-      dx: '0px',
-      dy: '-260px',
-      r: '8deg',
-      delay: 320,
-    },
-    {
-      x: 1060,
-      y: 130,
-      w: 420,
-      h: 300,
-      color: tokens.paper,
-      dx: '240px',
-      dy: '-220px',
-      r: '-6deg',
-      delay: 440,
-    },
-    {
-      x: 1520,
-      y: 110,
-      w: 280,
-      h: 260,
-      color: tokens.cream,
-      dx: '320px',
-      dy: '-180px',
-      r: '14deg',
-      delay: 560,
-    },
-    {
-      x: 180,
-      y: 700,
-      w: 320,
-      h: 260,
-      color: tokens.cream,
-      dx: '-280px',
-      dy: '260px',
-      r: '12deg',
-      delay: 380,
-    },
-    {
-      x: 560,
-      y: 720,
-      w: 360,
-      h: 240,
-      color: tokens.accent,
-      dx: '-100px',
-      dy: '300px',
-      r: '-10deg',
-      delay: 500,
-    },
-    {
-      x: 980,
-      y: 700,
-      w: 460,
-      h: 260,
-      color: tokens.paper,
-      dx: '120px',
-      dy: '300px',
-      r: '6deg',
-      delay: 620,
-    },
-    {
-      x: 1480,
-      y: 720,
-      w: 300,
-      h: 240,
-      color: '#f5b85a',
-      dx: '320px',
-      dy: '260px',
-      r: '-14deg',
-      delay: 740,
-    },
-  ];
-
-  return (
+const AssetBlock = ({
+  x,
+  y,
+  w,
+  h,
+  color,
+  dx,
+  dy,
+  r,
+  delay,
+  label,
+  light = false,
+}: {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  color: string;
+  dx: string;
+  dy: string;
+  r: string;
+  delay: number;
+  label: string;
+  light?: boolean;
+}) => (
+  <div
+    style={
+      {
+        position: 'absolute',
+        left: x,
+        top: y,
+        width: w,
+        height: h,
+        background: color,
+        ['--dx' as string]: dx,
+        ['--dy' as string]: dy,
+        ['--r' as string]: r,
+        boxShadow: light ? `inset 0 0 0 1px rgba(10,10,10,0.05)` : undefined,
+        animation: `mFlyIn 1000ms ${EASE_OUT} ${delay}ms both`,
+      } as CSSProperties
+    }
+  >
     <div
       style={{
-        ...fill,
-        background: tokens.ink,
-        color: tokens.paper,
+        position: 'absolute',
+        bottom: 18,
+        left: 20,
+        right: 20,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontFamily: tokens.mono,
+        fontSize: 13,
+        letterSpacing: '0.28em',
+        textTransform: 'uppercase',
+        color: light ? tokens.ink : tokens.paper,
+        opacity: 0.78,
+        animation: `mFade 700ms ease ${delay + 700}ms both`,
       }}
     >
-      <style>{keyframes}</style>
+      <span>{label}</span>
+      <span style={{ opacity: 0.55 }}>
+        {w}×{h}
+      </span>
+    </div>
+  </div>
+);
 
-      {blocks.map((b, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'absolute',
-            left: b.x,
-            top: b.y,
-            width: b.w,
-            height: b.h,
-            background: b.color,
-            ['--dx' as string]: b.dx,
-            ['--dy' as string]: b.dy,
-            ['--r' as string]: b.r,
-            animation: `mFlyIn 800ms cubic-bezier(0.2, 0.9, 0.25, 1) ${b.delay}ms both`,
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 16,
-              left: 18,
-              fontFamily: tokens.mono,
-              fontSize: 16,
-              letterSpacing: '0.28em',
-              textTransform: 'uppercase',
-              color:
-                b.color === tokens.ink || b.color === tokens.accent ? tokens.paper : tokens.ink,
-              opacity: 0.85,
-              animation: `mFade 500ms ease ${b.delay + 600}ms both`,
-            }}
-          >
-            {['IMG', 'MP4', 'SVG', 'TTF', 'PNG', 'WEBP', 'JPG', 'WOFF2'][i]}
-          </div>
-        </div>
-      ))}
+const Assets: Page = () => (
+  <div
+    style={{
+      ...fill,
+      background: tokens.ink,
+      color: tokens.paper,
+    }}
+  >
+    <style>{keyframes}</style>
 
-      {/* Center mega title */}
+    <AssetBlock
+      x={140}
+      y={120}
+      w={360}
+      h={220}
+      color={tokens.accent}
+      dx="-200px"
+      dy="-200px"
+      r="-12deg"
+      delay={260}
+      label="hero.png"
+    />
+    <AssetBlock
+      x={540}
+      y={90}
+      w={480}
+      h={280}
+      color="#f5b85a"
+      dx="0px"
+      dy="-260px"
+      r="8deg"
+      delay={380}
+      label="intro.mp4"
+      light
+    />
+    <AssetBlock
+      x={1060}
+      y={130}
+      w={420}
+      h={300}
+      color={tokens.paper}
+      dx="240px"
+      dy="-220px"
+      r="-6deg"
+      delay={500}
+      label="logo.svg"
+      light
+    />
+    <AssetBlock
+      x={1520}
+      y={110}
+      w={280}
+      h={260}
+      color={tokens.cream}
+      dx="320px"
+      dy="-180px"
+      r="14deg"
+      delay={620}
+      label="Inter.ttf"
+      light
+    />
+    <AssetBlock
+      x={180}
+      y={700}
+      w={320}
+      h={260}
+      color={tokens.cream}
+      dx="-280px"
+      dy="260px"
+      r="12deg"
+      delay={440}
+      label="cover.jpg"
+      light
+    />
+    <AssetBlock
+      x={560}
+      y={720}
+      w={360}
+      h={240}
+      color={tokens.accent}
+      dx="-100px"
+      dy="300px"
+      r="-10deg"
+      delay={560}
+      label="chart.svg"
+    />
+    <AssetBlock
+      x={980}
+      y={700}
+      w={460}
+      h={260}
+      color={tokens.paper}
+      dx="120px"
+      dy="300px"
+      r="6deg"
+      delay={680}
+      label="team.webp"
+      light
+    />
+    <AssetBlock
+      x={1480}
+      y={720}
+      w={300}
+      h={240}
+      color="#f5b85a"
+      dx="320px"
+      dy="260px"
+      r="-14deg"
+      delay={800}
+      label="JetBrains.woff2"
+      light
+    />
+
+    {/* Center mega title */}
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerEvents: 'none',
+      }}
+    >
       <div
         style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-        }}
-      >
-        <div
-          style={{
-            fontSize: 380,
-            fontWeight: 900,
-            letterSpacing: '-0.05em',
-            lineHeight: 0.85,
-            color: tokens.paper,
-            mixBlendMode: 'difference',
-            animation: 'mPop 900ms cubic-bezier(0.2, 1.1, 0.3, 1) 1100ms both',
-          }}
-        >
-          ASSETS
-        </div>
-      </div>
-
-      {/* Bottom mono ticker */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 36,
-          left: 140,
-          right: 140,
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontFamily: tokens.mono,
-          fontSize: 22,
-          letterSpacing: '0.32em',
-          textTransform: 'uppercase',
+          fontSize: 400,
+          fontWeight: 900,
+          letterSpacing: '-0.055em',
+          lineHeight: 0.84,
           color: tokens.paper,
-          opacity: 0.7,
-          animation: 'mFade 700ms ease 1700ms both',
+          mixBlendMode: 'difference',
+          animation: `mPop 1100ms ${EASE_POP} 1400ms both`,
         }}
       >
-        <span>· image / video / vector / font</span>
-        <span>drop · paste · import</span>
+        ASSETS
       </div>
     </div>
-  );
-};
+
+    {/* Bottom mono ticker */}
+    <div
+      style={{
+        position: 'absolute',
+        bottom: 56,
+        left: 140,
+        right: 140,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontFamily: tokens.mono,
+        fontSize: 16,
+        letterSpacing: '0.32em',
+        textTransform: 'uppercase',
+        color: tokens.paper,
+        opacity: 0.55,
+        animation: `mFade 900ms ease 2200ms both`,
+        pointerEvents: 'none',
+      }}
+    >
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 14 }}>
+        <span
+          aria-hidden
+          style={{ width: 24, height: 1, background: tokens.accent, opacity: 0.9 }}
+        />
+        image · video · vector · font
+      </span>
+      <span>drop · paste · import</span>
+    </div>
+  </div>
+);
 
 /* ─────────────────────── 7. CLI init ─────────────────────── */
 
@@ -966,22 +1285,23 @@ const Cli: Page = () => (
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'flex-start',
-      padding: '0 120px',
+      padding: '0 140px',
     }}
   >
     <style>{keyframes}</style>
+    <Grain />
 
-    {/* Top accent rule */}
+    {/* Top accent hairline */}
     <Bar
       color={tokens.accent}
-      delay={0}
-      duration={700}
+      delay={120}
+      duration={1100}
       origin="left"
       style={{
         position: 'absolute',
         top: 120,
-        left: 120,
-        right: 120,
+        left: 140,
+        right: 140,
         height: 6,
       }}
     />
@@ -991,55 +1311,60 @@ const Cli: Page = () => (
       style={{
         marginTop: 40,
         fontFamily: tokens.mono,
-        fontSize: 28,
+        fontSize: 18,
         letterSpacing: '0.42em',
         textTransform: 'uppercase',
         color: tokens.accent,
-        marginBottom: 80,
-        animation: 'mWipeR 800ms cubic-bezier(0.7, 0, 0.2, 1) 320ms both',
+        marginBottom: 64,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 16,
+        animation: `mWipeR 900ms ${EASE_OUT} 420ms both`,
       }}
     >
-      Available now ——
+      <span aria-hidden style={{ width: 28, height: 1, background: tokens.accent }} />
+      Available now — v0.1
     </div>
 
     {/* Hero command line */}
     <div
       style={{
         fontFamily: tokens.mono,
-        fontSize: '100px',
+        fontSize: '108px',
         fontWeight: 700,
         letterSpacing: '-0.04em',
         lineHeight: 1,
         display: 'flex',
         alignItems: 'baseline',
         flexWrap: 'wrap',
-        gap: 12,
+        gap: 14,
       }}
     >
       <span
         style={{
           color: tokens.accent,
-          animation: 'mPop 600ms cubic-bezier(0.2, 1.1, 0.3, 1) 600ms both',
+          animation: `mPop 700ms ${EASE_POP} 720ms both`,
         }}
       >
         $
       </span>
       <Letters
         text="npx @open-slide/cli init"
-        delay={780}
-        step={42}
-        duration={620}
+        delay={920}
+        step={48}
+        duration={760}
         anim="mSlamUp"
+        ease={EASE_OUT}
       />
       <span
         style={{
           display: 'inline-block',
           width: 22,
-          height: 110,
+          height: 120,
           background: tokens.ink,
           marginLeft: 8,
           alignSelf: 'center',
-          animation: 'mFade 220ms ease 1900ms both, mBlink 1s steps(1) 2100ms infinite',
+          animation: `mFade 240ms ease 2200ms both, mBlink 1s steps(1) 2400ms infinite`,
         }}
       />
     </div>
@@ -1047,12 +1372,12 @@ const Cli: Page = () => (
     {/* Underline sweep */}
     <Bar
       color={tokens.ink}
-      delay={2100}
-      duration={1100}
+      delay={2400}
+      duration={1300}
       origin="left"
       style={{
         marginTop: 64,
-        height: 6,
+        height: 4,
         width: 'calc(100% - 240px)',
       }}
     />
@@ -1061,37 +1386,46 @@ const Cli: Page = () => (
     <div
       style={{
         marginTop: 56,
-        fontSize: 64,
+        fontSize: 72,
         fontWeight: 800,
         letterSpacing: '-0.03em',
-        lineHeight: 1.06,
-        animation: 'mSlamUp 700ms cubic-bezier(0.2, 0.9, 0.25, 1) 2400ms both',
+        lineHeight: 1.04,
+        animation: `mReveal 1100ms ${EASE_OUT} 2800ms both`,
       }}
     >
-      Build slides with your{' '}
-      <span style={{ color: tokens.accent, fontStyle: 'italic' }}>agent</span>.
+      Build slides with your <Serif>agent.</Serif>
     </div>
 
     {/* Bottom rail */}
     <div
       style={{
         position: 'absolute',
-        bottom: 80,
-        left: 120,
-        right: 120,
+        bottom: 100,
+        left: 140,
+        right: 140,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         fontFamily: tokens.mono,
-        fontSize: 22,
+        fontSize: 18,
         letterSpacing: '0.32em',
         textTransform: 'uppercase',
         color: tokens.ink,
-        animation: 'mFade 700ms ease 3000ms both',
+        opacity: 0.75,
+        animation: `mFade 900ms ease 3500ms both`,
       }}
     >
-      <span>open-slide.dev</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+        <span
+          aria-hidden
+          style={{ width: 6, height: 6, borderRadius: '50%', background: tokens.accent }}
+        />
+        open-slide.dev
+      </span>
+      <span style={{ opacity: 0.7 }}>npm i @open-slide/core</span>
     </div>
+
+    <Brand index={7} delay={3800} />
   </div>
 );
 
