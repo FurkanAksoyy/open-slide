@@ -1,41 +1,50 @@
 ---
 name: Bright Sans
-description: Friendly product deck — white canvas, geometric sans, four-colour accent system, soft rounded cards.
+description: Editorial luxury product brief — warm-white canvas, oversized Inter Tight display with italic serif accents, hairline-ruled numbered list, restrained four-ink section colours, slow clip-path reveals.
 ---
 
 # Bright Sans
 
 ## Palette
 
-A four-colour accent system: blue is the lead; the other three appear once each, never together on the same headline.
+A restrained palette: one near-black ink against a warm-white page, a single editorial blue as the lead accent, and three "section colours" used only as 8 px dots beside an item index — never inside body type, never on a headline.
 
-| Role     | Value     | Notes                              |
-| -------- | --------- | ---------------------------------- |
-| bg       | `#ffffff` | white canvas                       |
-| surface  | `#f7f9fc` | soft inset card                    |
-| text     | `#202124` | near-black ink                     |
-| accent   | `#1a73e8` | primary blue, default highlight    |
-| accent2  | `#ea4335` | red, for emphasis or warnings      |
-| accent3  | `#fbbc04` | yellow, for callouts               |
-| accent4  | `#34a853` | green, for confirmations           |
-| muted    | `#5f6368` | secondary copy, captions           |
-| hairline | `#e8eaed` | dividers, card borders             |
+| Role          | Value                       | Notes                                                          |
+| ------------- | --------------------------- | -------------------------------------------------------------- |
+| bg            | `#FCFBF7`                   | warm white — a 1° shift off pure white                         |
+| text          | `#0F0F10`                   | near-black ink                                                 |
+| muted         | `#6B6B70`                   | secondary copy, captions, mono labels                          |
+| faint         | `#A4A4A8`                   | tertiary supporting copy                                       |
+| hairline      | `rgba(15,15,16,0.08)`       | item dividers, full-width rules                                |
+| hairlineSoft  | `rgba(15,15,16,0.04)`       | barely-there rules over surface washes                         |
+| ink (lead)    | `#1E40AF`                   | editorial blue — italic-serif accent + lead dot                |
+| red           | `#B91C1C`                   | section colour 2                                               |
+| ochre         | `#A16207`                   | section colour 3                                               |
+| forest        | `#15803D`                   | section colour 4                                               |
+
+A pair of radial washes (blue 5%, ochre 5%) sit at opposite diagonal corners as a barely-visible paper wash — they keep the canvas from feeling clinical.
 
 ## Typography
 
-- Display font: `'Inter Tight', 'Inter', -apple-system, system-ui, sans-serif` — weight 600.
-- Body font: `'Inter', -apple-system, system-ui, sans-serif` — weight 400, weight 500 for emphasis.
-- Type scale:
-  - Hero title: 132 px, line-height 1.05, letter-spacing -0.02em.
-  - Page heading: 56 px, weight 600.
-  - Body text: 32 px, line-height 1.5.
-  - Eyebrow: 16 px, weight 600, letter-spacing 0.04em (sentence case, not uppercase).
+- Display / body font: `'Inter Tight', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif` — weights 400 / 500.
+- Italic serif accent: `'Iowan Old Style', 'New York', 'Times New Roman', Georgia, serif` — italic, weight 400, in `ink` colour. One phrase per headline, never two.
+- Mono font: `'JetBrains Mono', 'SF Mono', Menlo, monospace` — eyebrow labels, item index, footer.
+- Type scale (1920×1080):
+  - Hero title: **176 px**, weight 500, line-height 0.94, letter-spacing -0.04em, `font-feature-settings: "ss01","cv11"`.
+  - Page heading: 84 px, weight 500, letter-spacing -0.03em, line-height 1.02.
+  - Item title: 44 px, weight 500, letter-spacing -0.022em.
+  - Body text: 26–28 px, line-height 1.55.
+  - Item body: 21 px.
+  - Eyebrow label: 14 px mono, uppercase, letter-spacing 0.22em, in `muted`. Always sits **below** a 1 px × 56 px ink-blue rule.
+  - Item index: 16 px mono, tabular-nums, letter-spacing 0.14em (`01`, `02`, `03`, `04`).
+  - Footer: 14 px mono, uppercase, letter-spacing 0.14em.
 
 ## Layout
 
-- Content padding: 120 px horizontal, 100 px vertical.
-- Alignment: left, with generous white space. Body copy capped at `max-width: 1180 px`.
-- Card radius: 24 px. Card padding: 36 px. No drop shadow — only a 1 px `hairline` border.
+- Content padding: **140 px** horizontal, **120 px** vertical.
+- Hero pages: vertically centred single-column stack — eyebrow → title → hairline → body. A 120 px hairline rule sits between title and body (a tiny editorial mark).
+- Content pages: a 3-column grid for each row — `88px | 1fr | 480px` (index, item title, body). Items are separated by 1 px hairlines top and bottom. **No card shells, no rounded surfaces, no shadows.**
+- The lead section colour appears only as an 8 px dot beside the item index. Hover/animation is a gentle 1.15× scale loop.
 
 ## Fixed components
 
@@ -46,12 +55,13 @@ const Title = ({ children }: { children: React.ReactNode }) => (
   <h1
     style={{
       fontFamily: "'Inter Tight', 'Inter', -apple-system, system-ui, sans-serif",
-      fontSize: 132,
-      fontWeight: 600,
-      lineHeight: 1.05,
-      letterSpacing: '-0.02em',
+      fontSize: 176,
+      fontWeight: 500,
+      lineHeight: 0.94,
+      letterSpacing: '-0.04em',
       margin: 0,
-      color: '#202124',
+      color: '#0F0F10',
+      fontFeatureSettings: '"ss01", "cv11"',
     }}
   >
     {children}
@@ -59,109 +69,113 @@ const Title = ({ children }: { children: React.ReactNode }) => (
 );
 ```
 
-### Footer
+### Serif italic accent
+
+One phrase per heading. Always coloured `ink` (`#1E40AF`).
 
 ```tsx
-const Footer = ({ pageNum, total }: { pageNum: number; total: number }) => (
-  <div
+const Serif = ({ children }: { children: React.ReactNode }) => (
+  <em
     style={{
-      position: 'absolute',
-      left: 120,
-      right: 120,
-      bottom: 60,
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      fontFamily: "'Inter', system-ui, sans-serif",
-      fontSize: 18,
-      color: '#5f6368',
+      fontFamily: "'Iowan Old Style', 'New York', 'Times New Roman', Georgia, serif",
+      fontStyle: 'italic',
+      fontWeight: 400,
+      letterSpacing: '-0.025em',
+      color: '#1E40AF',
     }}
   >
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-      <span
-        aria-hidden
-        style={{ width: 10, height: 10, borderRadius: '50%', background: '#1a73e8' }}
-      />
-      Spring product update
-    </span>
-    <span>
-      {pageNum} / {total}
-    </span>
-  </div>
+    {children}
+  </em>
 );
 ```
 
-### Eyebrow
+### Eyebrow (rule + label)
 
-A pill in the lead accent. Use the secondary colours (`accent2`–`accent4`) sparingly for variety; reserve `accent` for the cover.
+A 56 px ink-blue rule above an uppercase mono label — replaces the old pill.
 
 ```tsx
-const Eyebrow = ({ children, tone = 'blue' }: { children: React.ReactNode; tone?: 'blue' | 'red' | 'yellow' | 'green' }) => {
-  const fill = tone === 'red' ? '#ea4335' : tone === 'yellow' ? '#fbbc04' : tone === 'green' ? '#34a853' : '#1a73e8';
-  const ink = tone === 'yellow' ? '#202124' : '#ffffff';
-  return (
+const Eyebrow = ({ children }: { children: React.ReactNode }) => (
+  <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 14 }}>
+    <span aria-hidden style={{ height: 1, width: 56, background: '#1E40AF' }} />
     <span
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '8px 18px',
-        borderRadius: 999,
-        background: fill,
-        color: ink,
-        fontFamily: "'Inter', system-ui, sans-serif",
-        fontSize: 16,
-        fontWeight: 600,
-        letterSpacing: '0.04em',
+        fontFamily: "'JetBrains Mono', 'SF Mono', Menlo, monospace",
+        fontSize: 14,
+        letterSpacing: '0.22em',
+        textTransform: 'uppercase',
+        color: '#6B6B70',
       }}
     >
       {children}
     </span>
-  );
-};
+  </div>
+);
+```
+
+### Footer
+
+```tsx
+const Footer = ({
+  pageNum,
+  total,
+  label = 'Spring update — 2026',
+}: { pageNum: number; total: number; label?: string }) => (
+  <div
+    style={{
+      position: 'absolute',
+      left: 140, right: 140, bottom: 64,
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      fontFamily: "'JetBrains Mono', 'SF Mono', Menlo, monospace",
+      fontSize: 14, letterSpacing: '0.14em', textTransform: 'uppercase',
+      color: '#6B6B70',
+    }}
+  >
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+      <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: '#1E40AF' }} />
+      {label}
+    </span>
+    <span style={{ fontVariantNumeric: 'tabular-nums', display: 'inline-flex', gap: 6 }}>
+      <span style={{ color: '#0F0F10' }}>{String(pageNum).padStart(2, '0')}</span>
+      <span style={{ opacity: 0.4 }}>/</span>
+      <span style={{ opacity: 0.5 }}>{String(total).padStart(2, '0')}</span>
+    </span>
+  </div>
+);
 ```
 
 ## Motion
 
-- Philosophy: subtle.
+- Philosophy: **slow, deliberate, mask-revealed.** Easing is `cubic-bezier(0.22, 1, 0.36, 1)`. Durations 900–1200 ms. Stagger order on every page: rule → eyebrow → title (clip-path reveal) → hairline (scaleX) → body → items → footer.
 - Reusable keyframes:
 
 ```css
-@keyframes bs-fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes bs-rise {
+  0%   { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes bs-mask {
+  0%   { clip-path: inset(0 100% 0 0); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+@keyframes bs-line {
+  0%   { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+@keyframes bs-dot {
+  0%, 100% { transform: scale(1);    }
+  50%      { transform: scale(1.15); }
 }
 ```
 
-Apply to the hero block on the cover and to each card on the content page. Footer stays still.
+`bs-mask` is reserved for headings — it reveals type left-to-right like a curtain pull. `bs-line` reveals every rule from its left edge. Footer fades in last (700 ms delay) and never moves.
 
 ## Aesthetic
 
-A friendly product update — bright white, generous breathing room, one calm geometric sans across the whole deck, four primary colours rationed across the slides. Cards are soft-cornered but flat (no shadow). Avoid: gradients, glow, dark mode, drop shadows, decorative emoji unrelated to a feature, photography that breaks the white canvas. If a slide could appear above the fold of a clean product page, it is on theme.
+A magazine spread, not a product page. The lede is enormous Inter Tight with one italic serif phrase tucked into it; everything below it is held in place by hairlines and indices. Section colours live as 8 px dots, not pill tags. There are no card shells, no rounded surfaces, no soft shadows — the rhythm of the page is set by full-width 1 px rules and the white space between them. Avoid: rounded card grids, four-colour pill labels, drop shadows, gradients on type, decorative illustration. If the slide could be the opening spread of a yearly product brief from a serious publication, it is on theme.
 
-## Example usage
+## Aliases
 
-```tsx
-const Cover: Page = () => (
-  <div
-    style={{
-      width: '100%',
-      height: '100%',
-      background: '#ffffff',
-      color: '#202124',
-      padding: '100px 120px',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      gap: 36,
-      animation: 'bs-fadeUp 500ms ease-out both',
-    }}
-  >
-    <Eyebrow tone="blue">Spring update · 2026</Eyebrow>
-    <Title>Built for the moments that matter.</Title>
-    <p style={{ fontSize: 32, lineHeight: 1.5, color: '#5f6368', maxWidth: 1180, margin: 0 }}>
-      Four small features that make the next eight months of work feel a little easier.
-    </p>
-    <Footer pageNum={1} total={6} />
-  </div>
-);
-```
+- `editorial`
+- `magazine`
+- `light`
