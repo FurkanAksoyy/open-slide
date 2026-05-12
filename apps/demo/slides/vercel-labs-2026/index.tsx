@@ -1845,123 +1845,76 @@ const Stack: Page = () => {
 // ────────────────────────────────────────────────────────────────────────────
 // 11 — Closer
 // ────────────────────────────────────────────────────────────────────────────
-const Closer: Page = () => {
-  const links: Array<{ name: string; url: string; color: string }> = [
-    { name: 'agent-browser', url: 'github.com/vercel-labs/agent-browser', color: palette.cyan },
-    { name: 'just-bash', url: 'justbash.dev', color: palette.green },
-    { name: 'open-agents', url: 'github.com/vercel-labs/open-agents', color: palette.violet },
-    { name: 'portless', url: 'portless.sh', color: palette.blue },
-    { name: 'json-render', url: 'github.com/vercel-labs/json-render', color: palette.pink },
-    { name: 'zero-native', url: 'zero-native.dev', color: palette.amber },
-  ];
+const Closer: Page = () => (
+  <div style={fill}>
+    <Style />
+    <Grid opacity={0.3} />
+    <GradientOrb x="-10%" y="-5%" size={1600} color={palette.pink} opacity={0.16} />
+    <GradientOrb x="110%" y="115%" size={1600} color={palette.cyan} opacity={0.16} />
+    <GradientOrb x="55%" y="55%" size={900} color={palette.violet} opacity={0.06} />
+    <MetaRow index="11" total="11" />
 
-  return (
-    <div style={fill}>
-      <Style />
-      <Grid opacity={0.3} />
-      <GradientOrb x="-10%" y="-5%" size={1600} color={palette.pink} opacity={0.16} />
-      <GradientOrb x="110%" y="115%" size={1600} color={palette.cyan} opacity={0.16} />
-      <MetaRow index="11" total="11" />
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        padding: '0 120px',
+        gap: 48,
+      }}
+    >
+      <Eyebrow dot={palette.cyan} delay={120}>
+        05 — Takeaway
+      </Eyebrow>
 
       <div
+        className="vl-rise"
         style={{
-          position: 'absolute',
-          top: 220,
-          left: 120,
-          right: 120,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 44,
+          fontFamily: fonts.sans,
+          fontSize: 168,
+          lineHeight: 0.94,
+          letterSpacing: '-0.05em',
+          fontWeight: 600,
+          color: palette.text,
+          animationDelay: '240ms',
         }}
       >
-        <Eyebrow dot={palette.cyan} delay={120}>
-          05 — Takeaway
-        </Eyebrow>
-
-        <div
-          className="vl-rise"
-          style={{
-            fontFamily: fonts.sans,
-            fontSize: 152,
-            lineHeight: 0.94,
-            letterSpacing: '-0.05em',
-            fontWeight: 600,
-            color: palette.text,
-            animationDelay: '240ms',
-          }}
-        >
-          Open. Composable.
-          <br />
-          Agent-native.
-        </div>
-
-        <div
-          className="vl-sweep"
-          style={{
-            height: 1,
-            background: palette.lineStrong,
-            animationDelay: '520ms',
-          }}
-        />
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            rowGap: 18,
-            columnGap: 48,
-          }}
-        >
-          {links.map((l, i) => (
-            <div
-              key={l.name}
-              className="vl-rise"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                animationDelay: `${640 + i * 70}ms`,
-              }}
-            >
-              <span
-                className="vl-pulse"
-                style={{
-                  width: 8,
-                  height: 8,
-                  background: l.color,
-                  color: l.color,
-                  flex: 'none',
-                }}
-              />
-              <div
-                style={{
-                  fontFamily: fonts.mono,
-                  fontSize: 20,
-                  letterSpacing: '-0.005em',
-                  color: palette.text,
-                }}
-              >
-                {l.name}
-              </div>
-              <div
-                style={{
-                  fontFamily: fonts.mono,
-                  fontSize: 16,
-                  letterSpacing: '0.04em',
-                  color: palette.muted,
-                }}
-              >
-                {l.url}
-              </div>
-            </div>
-          ))}
-        </div>
+        Open. Composable.
+        <br />
+        Agent-native.
       </div>
 
-      <FooterRule note="XI · ▲ vercel.com/labs" />
+      <div
+        className="vl-sweep"
+        style={{
+          width: 220,
+          height: 1,
+          background: palette.lineStrong,
+          animationDelay: '520ms',
+        }}
+      />
+
+      <div
+        className="vl-fade"
+        style={{
+          fontFamily: fonts.mono,
+          fontSize: 18,
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+          color: palette.muted,
+          animationDelay: '640ms',
+        }}
+      >
+        ▲ &nbsp;Thank you.
+      </div>
     </div>
-  );
-};
+
+    <FooterRule note="XI · fin" />
+  </div>
+);
 
 export default [
   Cover,
