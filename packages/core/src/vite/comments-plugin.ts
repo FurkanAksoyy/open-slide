@@ -390,7 +390,10 @@ function buildStyleSplice(
   }
 
   for (const op of ops) {
-    const matching = entries.filter((entry) => entry.kind === 'prop' && entry.key === op.key);
+    const matching = entries.filter(
+      (entry): entry is Extract<StyleEntry, { kind: 'prop' }> =>
+        entry.kind === 'prop' && entry.key === op.key,
+    );
     if (op.value === null) {
       for (const entry of matching) entries.splice(entries.indexOf(entry), 1);
       if (hasRawEntry) {
@@ -617,7 +620,7 @@ function collectTextRangePartsRaw(element: JsxParent, out: TextRangePart[]): voi
 }
 
 function normalizeTextRangeParts(parts: TextRangePart[]): TextRangePart[] {
-  return parts.flatMap((part, index) => {
+  return parts.flatMap((part, index): TextRangePart[] => {
     if (!('raw' in part)) return [part];
     let start = 0;
     let end = part.current.length;

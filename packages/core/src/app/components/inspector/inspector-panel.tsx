@@ -204,7 +204,7 @@ export function InspectorPanel() {
           end: contentRange.end,
           key: op.key,
           value: op.value,
-          prevText: pinSnapshot.text,
+          prevText: pinSnapshot.text ?? undefined,
         })),
       );
       setRangeStylePreview((current) => ({
