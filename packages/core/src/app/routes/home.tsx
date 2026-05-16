@@ -1,6 +1,8 @@
 import {
-  ArrowUpDown,
+  ArrowDownAZ,
   Check,
+  ChevronDown,
+  Clock,
   FolderInput,
   FolderPlus,
   MoreHorizontal,
@@ -211,28 +213,43 @@ function SortControl({ value, onChange }: { value: SortKey; onChange: (next: Sor
     'title-asc': t.home.sortByTitleAsc,
     'title-desc': t.home.sortByTitleDesc,
   };
+  const FieldIcon = ({ k, className }: { k: SortKey; className?: string }) =>
+    k === 'title-asc' || k === 'title-desc' ? (
+      <ArrowDownAZ className={className} aria-hidden />
+    ) : (
+      <Clock className={className} aria-hidden />
+    );
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
           aria-label={`${t.home.sortLabel}: ${labels[value]}`}
-          title={`${t.home.sortLabel}: ${labels[value]}`}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-border bg-background text-muted-foreground outline-none hover:text-foreground focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
+          className="flex h-8 items-center gap-1.5 rounded-[6px] border border-border bg-background pl-2 pr-1.5 text-[12.5px] font-medium text-foreground outline-none hover:bg-muted focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30"
         >
-          <ArrowUpDown className="size-3.5" />
+          <FieldIcon k={value} className="size-3.5 text-muted-foreground" />
+          <span>{labels[value]}</span>
+          <ChevronDown className="size-3 text-muted-foreground" aria-hidden />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[200px]">
-        {SORT_KEYS.map((key) => (
-          <DropdownMenuItem key={key} onSelect={() => onChange(key)}>
-            <Check
-              className={cn('size-3.5', value === key ? 'opacity-100' : 'opacity-0')}
-              aria-hidden
-            />
-            <span>{labels[key]}</span>
-          </DropdownMenuItem>
-        ))}
+      <DropdownMenuContent align="end" className="min-w-[180px]">
+        {SORT_KEYS.map((key) => {
+          const active = value === key;
+          return (
+            <DropdownMenuItem
+              key={key}
+              onSelect={() => onChange(key)}
+              className={cn(active && 'bg-muted text-foreground')}
+            >
+              <FieldIcon k={key} className="size-3.5 text-muted-foreground" />
+              <span className="flex-1">{labels[key]}</span>
+              <Check
+                className={cn('size-3.5 text-foreground', active ? 'opacity-100' : 'opacity-0')}
+                aria-hidden
+              />
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
