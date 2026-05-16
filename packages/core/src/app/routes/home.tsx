@@ -1,6 +1,5 @@
 import {
   ArrowDownAZ,
-  Check,
   ChevronDown,
   Clock,
   FolderInput,
@@ -242,11 +241,7 @@ function SortControl({ value, onChange }: { value: SortKey; onChange: (next: Sor
               className={cn(active && 'bg-muted text-foreground')}
             >
               <FieldIcon k={key} className="size-3.5 text-muted-foreground" />
-              <span className="flex-1">{labels[key]}</span>
-              <Check
-                className={cn('size-3.5 text-foreground', active ? 'opacity-100' : 'opacity-0')}
-                aria-hidden
-              />
+              <span>{labels[key]}</span>
             </DropdownMenuItem>
           );
         })}
