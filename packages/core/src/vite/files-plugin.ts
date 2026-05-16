@@ -4,6 +4,7 @@ import type { ServerResponse } from 'node:http';
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
+import { validateMutationRequest } from './request-guard.ts';
 
 const FOLDER_ID_RE = /^f-[a-f0-9]{8}$/;
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
@@ -626,6 +627,10 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
         try {
           const reorderMatch = url.pathname.match(/^\/([^/]+)\/reorder$/);
           if (reorderMatch && method === 'PUT') {
+            const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
+            if (!requestCheck.ok) {
+              return json(res, requestCheck.status, { error: requestCheck.error });
+            }
             const slideId = reorderMatch[1];
             if (!SLIDE_ID_RE.test(slideId)) return json(res, 400, { error: 'invalid slideId' });
 
@@ -678,6 +683,10 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
             const isDelete = method === 'DELETE' && !op;
             const isDuplicate = method === 'POST' && op === 'duplicate';
             if (!isDelete && !isDuplicate) return next();
+            const requestCheck = validateMutationRequest(req);
+            if (!requestCheck.ok) {
+              return json(res, requestCheck.status, { error: requestCheck.error });
+            }
 
             const entry = resolveSlideEntry(slidesRoot, slideId);
             if (!entry) return json(res, 400, { error: 'invalid slideId' });
@@ -711,6 +720,10 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
           if (!SLIDE_ID_RE.test(slideId)) return json(res, 400, { error: 'invalid slideId' });
 
           if (method === 'PATCH') {
+            const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
+            if (!requestCheck.ok) {
+              return json(res, requestCheck.status, { error: requestCheck.error });
+            }
             const body = (await readBody(req)) as SlidePatchBody;
             const name = validateSlideName(body.name);
             if (!name) return json(res, 400, { error: 'invalid name' });
@@ -742,6 +755,10 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
           }
 
           if (method === 'DELETE') {
+            const requestCheck = validateMutationRequest(req);
+            if (!requestCheck.ok) {
+              return json(res, requestCheck.status, { error: requestCheck.error });
+            }
             const removed = await rmSlideDir(slidesRoot, slideId);
             if (!removed) return json(res, 404, { error: 'slide not found' });
 
@@ -820,6 +837,10 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
             }
 
             if (method === 'POST') {
+              const requestCheck = validateMutationRequest(req);
+              if (!requestCheck.ok) {
+                return json(res, requestCheck.status, { error: requestCheck.error });
+              }
               const overwrite = url.searchParams.get('overwrite') === '1';
               const lenHeader = req.headers['content-length'];
               const len = typeof lenHeader === 'string' ? Number(lenHeader) : NaN;
@@ -869,6 +890,10 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
             }
 
             if (method === 'PATCH') {
+              const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
+              if (!requestCheck.ok) {
+                return json(res, requestCheck.status, { error: requestCheck.error });
+              }
               const body = (await readBody(req)) as { name?: unknown };
               const target = validateAssetName(body.name);
               if (!target) return json(res, 400, { error: 'invalid name' });
@@ -896,6 +921,10 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
             }
 
             if (method === 'DELETE') {
+              const requestCheck = validateMutationRequest(req);
+              if (!requestCheck.ok) {
+                return json(res, requestCheck.status, { error: requestCheck.error });
+              }
               try {
                 await fs.unlink(file);
               } catch (err) {
@@ -971,6 +1000,10 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
           }
 
           if (method === 'POST' && url.pathname === '/') {
+            const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
+            if (!requestCheck.ok) {
+              return json(res, requestCheck.status, { error: requestCheck.error });
+            }
             const body = (await readBody(req)) as CreateBody;
             const name = validateName(body.name);
             if (!name) return json(res, 400, { error: 'invalid name' });
@@ -985,6 +1018,10 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
           }
 
           if (method === 'PUT' && url.pathname === '/assign') {
+            const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
+            if (!requestCheck.ok) {
+              return json(res, requestCheck.status, { error: requestCheck.error });
+            }
             const body = (await readBody(req)) as AssignBody;
             if (typeof body.slideId !== 'string' || !SLIDE_ID_RE.test(body.slideId)) {
               return json(res, 400, { error: 'invalid slideId' });
@@ -1018,6 +1055,10 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
             if (!FOLDER_ID_RE.test(id)) return json(res, 400, { error: 'invalid id' });
 
             if (method === 'PATCH') {
+              const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
+              if (!requestCheck.ok) {
+                return json(res, requestCheck.status, { error: requestCheck.error });
+              }
               const body = (await readBody(req)) as PatchBody;
               const manifest = await readManifest(manifestPath);
               const folder = manifest.folders.find((f) => f.id === id);
@@ -1038,6 +1079,10 @@ export function filesPlugin(opts: FilesPluginOptions): Plugin {
             }
 
             if (method === 'DELETE') {
+              const requestCheck = validateMutationRequest(req);
+              if (!requestCheck.ok) {
+                return json(res, requestCheck.status, { error: requestCheck.error });
+              }
               const manifest = await readManifest(manifestPath);
               const before = manifest.folders.length;
               manifest.folders = manifest.folders.filter((f) => f.id !== id);

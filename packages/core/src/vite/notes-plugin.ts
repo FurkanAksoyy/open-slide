@@ -4,6 +4,7 @@ import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import * as t from '@babel/types';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
+import { validateMutationRequest } from './request-guard.ts';
 
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 
@@ -212,6 +213,8 @@ export function notesPlugin(opts: NotesPluginOptions): Plugin {
         const url = new URL(req.url ?? '/', 'http://local');
         const method = req.method ?? 'GET';
         if (method !== 'PUT' || url.pathname !== '/') return next();
+        const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
+        if (!requestCheck.ok) return json(res, requestCheck.status, { error: requestCheck.error });
 
         try {
           const body = (await readBody(req)) as NotesBody;

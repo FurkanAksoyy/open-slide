@@ -5,6 +5,7 @@ import { parse as babelParse } from '@babel/parser';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
 import { type DesignSystem, defaultDesign } from '../app/lib/design.ts';
 import type { AstNode } from './babel-walk.ts';
+import { validateMutationRequest } from './request-guard.ts';
 
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 
@@ -399,6 +400,10 @@ export function designPlugin(opts: DesignPluginOptions): Plugin {
           }
 
           if (method === 'PUT' && url.pathname === '/') {
+            const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
+            if (!requestCheck.ok) {
+              return json(res, requestCheck.status, { error: requestCheck.error });
+            }
             const body = (await readBody(req)) as { patch?: Partial<DesignSystem> };
             const patch = body.patch;
             if (!patch || typeof patch !== 'object') {
@@ -423,6 +428,10 @@ export function designPlugin(opts: DesignPluginOptions): Plugin {
           }
 
           if (method === 'POST' && url.pathname === '/reset') {
+            const requestCheck = validateMutationRequest(req);
+            if (!requestCheck.ok) {
+              return json(res, requestCheck.status, { error: requestCheck.error });
+            }
             let source: string;
             try {
               source = await fs.readFile(file, 'utf8');
