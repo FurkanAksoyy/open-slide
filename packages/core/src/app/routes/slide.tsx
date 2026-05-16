@@ -1,10 +1,12 @@
 import config from 'virtual:open-slide/config';
 import {
+  Check,
   ChevronDown,
   ChevronLeft,
   Download,
   FileCode2,
   FileText,
+  Link2,
   Loader2,
   Maximize,
   MonitorSpeaker,
@@ -61,7 +63,15 @@ export function Slide() {
   const { slide, error } = useSlideModule(slideId);
   const [playMode, setPlayMode] = useState<'window' | 'fullscreen' | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (linkCopiedTimerRef.current) clearTimeout(linkCopiedTimerRef.current);
+    };
+  }, []);
   const { renameSlide } = useFolders();
   const slideViewportRef = useRef<HTMLElement>(null);
   const t = useLocale();
@@ -375,6 +385,41 @@ export function Slide() {
             </div>
 
             <div className="flex items-center gap-1">
+              {view === 'slides' && (
+                <button
+                  type="button"
+                  aria-label={t.slide.copyLink}
+                  title={t.slide.copyLink}
+                  className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(window.location.href);
+                      toast.success(t.slide.toastCopyLinkSuccess);
+                      setLinkCopied(true);
+                      if (linkCopiedTimerRef.current) clearTimeout(linkCopiedTimerRef.current);
+                      linkCopiedTimerRef.current = setTimeout(() => setLinkCopied(false), 1200);
+                    } catch (err) {
+                      console.error('[open-slide] copy link failed', err);
+                      toast.error(t.slide.toastCopyLinkFailed);
+                    }
+                  }}
+                >
+                  <span className="relative grid size-4 place-items-center">
+                    <Link2
+                      className={cn(
+                        'col-start-1 row-start-1 size-4 transition-opacity duration-200',
+                        linkCopied ? 'opacity-0' : 'opacity-100',
+                      )}
+                    />
+                    <Check
+                      className={cn(
+                        'col-start-1 row-start-1 size-4 transition-opacity duration-200',
+                        linkCopied ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                  </span>
+                </button>
+              )}
               {view === 'slides' && allowHtmlDownload && (
                 <DropdownMenu>
                   <DropdownMenuTrigger

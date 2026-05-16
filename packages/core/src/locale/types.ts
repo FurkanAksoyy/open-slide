@@ -97,6 +97,9 @@ export type Locale = {
     agentDisconnected: string;
     agentDisconnectedTooltip: string;
     download: string;
+    copyLink: string;
+    toastCopyLinkSuccess: string;
+    toastCopyLinkFailed: string;
     exportAsHtml: string;
     exportAsPdf: string;
     pdfExportFailed: string;
