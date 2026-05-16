@@ -1,192 +1,5 @@
-import { randomUUID } from 'node:crypto';
-import fs from 'node:fs/promises';
-import type { ServerResponse } from 'node:http';
-import path from 'node:path';
-import { parse as babelParse } from '@babel/parser';
 import * as t from '@babel/types';
-import type { Connect, Plugin, ViteDevServer } from 'vite';
-import { walkAll, walkJsx } from './babel-walk.ts';
-import { validateMutationRequest } from './request-guard.ts';
-
-const MARKER_RE =
-  /\{\/\*\s*@slide-comment\s+id="(c-[a-f0-9]+)"\s+ts="([^"]+)"\s+text="([A-Za-z0-9_-]+={0,2})"\s*\*\/\}/g;
-
-const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
-
-type AddBody = {
-  slideId?: string;
-  line?: number;
-  column?: number;
-  text?: string;
-  hint?: string;
-};
-type EditBody = {
-  slideId?: string;
-  line?: number;
-  column?: number;
-  ops?: EditOp[];
-};
-type EditBatchBody = {
-  slideId?: string;
-  edits?: Array<{ line?: number; column?: number; ops?: EditOp[] }>;
-};
-type Comment = { id: string; line: number; ts: string; note: string; hint?: string };
-
-export function b64urlEncode(s: string): string {
-  return Buffer.from(s, 'utf8')
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-}
-
-export function b64urlDecode(s: string): string {
-  const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
-  return Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/') + pad, 'base64').toString('utf8');
-}
-
-async function readBody(req: Connect.IncomingMessage): Promise<unknown> {
-  return await new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    req.on('data', (c: Buffer) => chunks.push(c));
-    req.on('end', () => {
-      const raw = Buffer.concat(chunks).toString('utf8');
-      if (!raw) return resolve({});
-      try {
-        resolve(JSON.parse(raw));
-      } catch (e) {
-        reject(e);
-      }
-    });
-    req.on('error', reject);
-  });
-}
-
-function json(res: ServerResponse, status: number, body: unknown) {
-  res.statusCode = status;
-  res.setHeader('content-type', 'application/json');
-  res.end(JSON.stringify(body));
-}
-
-function resolveSlidePath(userCwd: string, slidesDir: string, slideId: string): string | null {
-  if (!SLIDE_ID_RE.test(slideId)) return null;
-  const slidesRoot = path.resolve(userCwd, slidesDir);
-  const full = path.resolve(slidesRoot, slideId, 'index.tsx');
-  if (!full.startsWith(slidesRoot + path.sep)) return null;
-  return full;
-}
-
-export function parseMarkers(source: string): Comment[] {
-  const comments: Comment[] = [];
-  const lines = source.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    MARKER_RE.lastIndex = 0;
-    const m = MARKER_RE.exec(line);
-    if (!m) continue;
-    const [, id, ts, textB64] = m;
-    try {
-      const payload = JSON.parse(b64urlDecode(textB64)) as { note: string; hint?: string };
-      comments.push({ id, line: i + 1, ts, note: payload.note, hint: payload.hint });
-    } catch {}
-  }
-  return comments;
-}
-
-function newId(): string {
-  return `c-${randomUUID().replace(/-/g, '').slice(0, 8)}`;
-}
-
-// We always splice the marker as the first child of a JSX container.
-// A JSX-comment-like token outside JSX context (e.g. as the body of
-// `() => ( <Foo/> )`) is parsed as an empty object literal and breaks
-// the surrounding expression.
-type InsertionPlan = { offset: number; indent: string };
-
-function lineToOffset(source: string, line: number): number {
-  let off = 0;
-  for (let l = 1; l < line; l++) {
-    const nl = source.indexOf('\n', off);
-    if (nl === -1) return source.length;
-    off = nl + 1;
-  }
-  return off;
-}
-
-function lineIndent(source: string, lineNumber: number): string {
-  const start = lineToOffset(source, lineNumber);
-  const m = source.slice(start, start + 200).match(/^[ \t]*/);
-  return m?.[0] ?? '';
-}
-
-type JsxContainer = t.JSXElement | t.JSXFragment;
-
-// Innermost-first list of JSX nodes enclosing the click point.
-// Inclusive at start, exclusive at end.
-function findJsxAncestors(ast: t.Node, line: number, column: number): JsxContainer[] {
-  const hits: { node: JsxContainer; size: number }[] = [];
-  walkJsx(ast, (n) => {
-    if (!n.loc || (!t.isJSXElement(n) && !t.isJSXFragment(n))) return;
-    const s = n.loc.start;
-    const e = n.loc.end;
-    const afterStart = line > s.line || (line === s.line && column >= s.column);
-    const beforeEnd = line < e.line || (line === e.line && column < e.column);
-    if (afterStart && beforeEnd) {
-      hits.push({ node: n, size: (n.end ?? 0) - (n.start ?? 0) });
-    }
-  });
-  hits.sort((a, b) => a.size - b.size);
-  return hits.map((h) => h.node);
-}
-
-function planInsertion(source: string, target: JsxContainer): InsertionPlan | null {
-  if (t.isJSXFragment(target)) {
-    const opening = target.openingFragment;
-    const startLine = target.loc?.start.line ?? 1;
-    return {
-      offset: opening.end ?? 0,
-      indent: `${lineIndent(source, startLine)}  `,
-    };
-  }
-  if (t.isJSXElement(target)) {
-    const opening = target.openingElement;
-    if (opening.selfClosing) return null;
-    const startLine = target.loc?.start.line ?? 1;
-    return {
-      offset: opening.end ?? 0,
-      indent: `${lineIndent(source, startLine)}  `,
-    };
-  }
-  return null;
-}
-
-// Walk innermost → outermost looking for the first JSX container we
-// can insert *inside* (not self-closing). Self-closing elements like
-// `<img/>` get hoisted to their nearest non-self-closing ancestor.
-function findInsertion(
-  source: string,
-  line: number,
-  column: number | undefined,
-): InsertionPlan | null {
-  const ast = parseSource(source);
-  if (!ast) return null;
-
-  const col = column ?? 0;
-  const ancestors = findJsxAncestors(ast, line, col);
-  for (const node of ancestors) {
-    const plan = planInsertion(source, node);
-    if (plan) return plan;
-  }
-  return null;
-}
-
-function offsetToLine(source: string, offset: number): number {
-  let line = 1;
-  for (let i = 0; i < offset && i < source.length; i++) {
-    if (source[i] === '\n') line++;
-  }
-  return line;
-}
+import { parseSource, walkAll, walkJsx } from './babel-walk.ts';
 
 export type EditOp =
   | { kind: 'set-style'; key: string; value: string | null; prevText?: string }
@@ -206,19 +19,143 @@ export type ApplyEditResult =
   | { ok: true; source: string }
   | { ok: false; status: number; error: string };
 
-type Splice = { from: number; to: number; text: string };
+export type Splice = { from: number; to: number; text: string };
 
-function parseSource(source: string): t.File | null {
-  try {
-    const ast = babelParse(source, {
-      sourceType: 'module',
-      plugins: ['typescript', 'jsx'],
-      errorRecovery: true,
-    }) as t.File & { errors?: unknown[] };
-    return ast.errors && ast.errors.length > 0 ? null : ast;
-  } catch {
-    return null;
+export function jsString(s: string): string {
+  return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
+}
+
+export function spliceRange(node: t.Node, text: string): Splice {
+  return { from: node.start ?? 0, to: node.end ?? 0, text };
+}
+
+// Emit a JSX attribute value: `"foo"` when the value is round-trip-safe
+// inside double quotes; otherwise wrap in `{...}` so escapes work.
+export function formatJsxAttrValue(value: string): string {
+  if (/^[^"\\<>&{}\n\r]*$/.test(value)) return `"${value}"`;
+  return `{${jsString(value)}}`;
+}
+
+function jsxAttrName(attr: t.JSXAttribute): string | null {
+  return t.isJSXIdentifier(attr.name) ? attr.name.name : null;
+}
+
+export function findJsxAttr(opening: t.JSXOpeningElement, name: string): t.JSXAttribute | null {
+  for (const attr of opening.attributes) {
+    if (t.isJSXAttribute(attr) && jsxAttrName(attr) === name) return attr;
   }
+  return null;
+}
+
+export function readJsxStringAttr(opening: t.JSXOpeningElement, name: string): string | null {
+  const attr = findJsxAttr(opening, name);
+  const v = attr?.value;
+  if (!v) return null;
+  if (t.isStringLiteral(v)) return v.value;
+  if (t.isJSXExpressionContainer(v) && t.isStringLiteral(v.expression)) return v.expression.value;
+  return null;
+}
+
+function readJsxNumberAttr(opening: t.JSXOpeningElement, name: string): number | null {
+  const attr = findJsxAttr(opening, name);
+  const v = attr?.value;
+  if (!v || !t.isJSXExpressionContainer(v)) return null;
+  if (!t.isNumericLiteral(v.expression)) return null;
+  const n = v.expression.value;
+  return Number.isFinite(n) ? n : null;
+}
+
+export type ImportInfo = {
+  node: t.ImportDeclaration;
+  source: string;
+  defaultIdent: string | null;
+};
+
+export function findImports(ast: t.File): ImportInfo[] {
+  const out: ImportInfo[] = [];
+  for (const node of ast.program.body) {
+    if (!t.isImportDeclaration(node)) continue;
+    let def: string | null = null;
+    for (const spec of node.specifiers) {
+      if (t.isImportDefaultSpecifier(spec)) {
+        def = spec.local.name;
+        break;
+      }
+    }
+    out.push({ node, source: node.source.value, defaultIdent: def });
+  }
+  return out;
+}
+
+function collectTopLevelIdentifiers(ast: t.File): Set<string> {
+  // Only need to avoid colliding with anything resolvable by JSX —
+  // import bindings cover the common case. Local consts/lets are
+  // handled by source-level identifier scanning below.
+  const names = new Set<string>();
+  for (const imp of findImports(ast)) {
+    if (imp.defaultIdent) names.add(imp.defaultIdent);
+    for (const spec of imp.node.specifiers) {
+      if (!t.isImportDefaultSpecifier(spec)) names.add(spec.local.name);
+    }
+  }
+  return names;
+}
+
+export function safeAssetIdentifier(filename: string, taken: Set<string>): string {
+  const stem = filename.replace(/\.[^.]+$/, '');
+  let camel = '';
+  let upper = false;
+  for (const ch of stem) {
+    if (/[A-Za-z0-9]/.test(ch)) {
+      camel += upper ? ch.toUpperCase() : ch;
+      upper = false;
+    } else {
+      upper = camel.length > 0;
+    }
+  }
+  let base = camel;
+  if (!base || !/^[A-Za-z_$]/.test(base)) {
+    base = `asset${base.charAt(0).toUpperCase()}${base.slice(1)}` || 'asset';
+  }
+  base = base.charAt(0).toLowerCase() + base.slice(1);
+  let candidate = base;
+  let i = 2;
+  while (taken.has(candidate)) {
+    candidate = `${base}${i}`;
+    i += 1;
+  }
+  return candidate;
+}
+
+type JsxContainer = t.JSXElement | t.JSXFragment;
+
+function findJsxAncestors(ast: t.Node, line: number, column: number): JsxContainer[] {
+  const hits: { node: JsxContainer; size: number }[] = [];
+  walkJsx(ast, (n) => {
+    if (!n.loc || (!t.isJSXElement(n) && !t.isJSXFragment(n))) return;
+    const s = n.loc.start;
+    const e = n.loc.end;
+    const afterStart = line > s.line || (line === s.line && column >= s.column);
+    const beforeEnd = line < e.line || (line === e.line && column < e.column);
+    if (afterStart && beforeEnd) {
+      hits.push({ node: n, size: (n.end ?? 0) - (n.start ?? 0) });
+    }
+  });
+  hits.sort((a, b) => a.size - b.size);
+  return hits.map((h) => h.node);
+}
+
+function findJsxByStart(ast: t.Node, line: number, column: number): t.JSXElement | null {
+  let hit: t.JSXElement | null = null;
+  walkJsx(ast, (n) => {
+    if (!t.isJSXElement(n) || !n.loc) return;
+    const s = n.loc.start;
+    if (s.line === line && s.column === column) {
+      hit = n;
+      return 'stop';
+    }
+  });
+  return hit;
 }
 
 function findInnermostJsxElement(ast: t.Node, line: number, column: number): t.JSXElement | null {
@@ -302,34 +239,6 @@ function findElementForEdit(
   const textMatch = findUniqueElementByText(ast, prevText);
   if (element && elementTextMatches(element, prevText)) return textMatch ?? element;
   return textMatch ?? element;
-}
-
-function findJsxByStart(ast: t.Node, line: number, column: number): t.JSXElement | null {
-  let hit: t.JSXElement | null = null;
-  walkJsx(ast, (n) => {
-    if (!t.isJSXElement(n) || !n.loc) return;
-    const s = n.loc.start;
-    if (s.line === line && s.column === column) {
-      hit = n;
-      return 'stop';
-    }
-  });
-  return hit;
-}
-
-function jsString(s: string): string {
-  return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
-}
-
-function jsxAttrName(attr: t.JSXAttribute): string | null {
-  return t.isJSXIdentifier(attr.name) ? attr.name.name : null;
-}
-
-function findJsxAttr(opening: t.JSXOpeningElement, name: string): t.JSXAttribute | null {
-  for (const attr of opening.attributes) {
-    if (t.isJSXAttribute(attr) && jsxAttrName(attr) === name) return attr;
-  }
-  return null;
 }
 
 function buildStyleSplice(
@@ -958,17 +867,6 @@ function collectCallSiteCandidates(ast: t.Node, componentName: string): TextCand
   return out;
 }
 
-// Emit a JSX attribute value: `"foo"` when the value is round-trip-safe
-// inside double quotes; otherwise wrap in `{...}` so escapes work.
-function formatJsxAttrValue(value: string): string {
-  if (/^[^"\\<>&{}\n\r]*$/.test(value)) return `"${value}"`;
-  return `{${jsString(value)}}`;
-}
-
-function spliceRange(node: t.Node, text: string): Splice {
-  return { from: node.start ?? 0, to: node.end ?? 0, text };
-}
-
 function collectPropCallSiteCandidates(
   ast: t.Node,
   componentName: string,
@@ -1182,70 +1080,12 @@ function buildTextSplice(
   return matches[0].splice(value);
 }
 
-type ImportInfo = { node: t.ImportDeclaration; source: string; defaultIdent: string | null };
-
-function findImports(ast: t.File): ImportInfo[] {
-  const out: ImportInfo[] = [];
-  for (const node of ast.program.body) {
-    if (!t.isImportDeclaration(node)) continue;
-    let def: string | null = null;
-    for (const spec of node.specifiers) {
-      if (t.isImportDefaultSpecifier(spec)) {
-        def = spec.local.name;
-        break;
-      }
-    }
-    out.push({ node, source: node.source.value, defaultIdent: def });
-  }
-  return out;
-}
-
-function collectTopLevelIdentifiers(ast: t.File): Set<string> {
-  // Only need to avoid colliding with anything resolvable by JSX —
-  // import bindings cover the common case. Local consts/lets are
-  // handled by source-level identifier scanning below.
-  const names = new Set<string>();
-  for (const imp of findImports(ast)) {
-    if (imp.defaultIdent) names.add(imp.defaultIdent);
-    for (const spec of imp.node.specifiers) {
-      if (!t.isImportDefaultSpecifier(spec)) names.add(spec.local.name);
-    }
-  }
-  return names;
-}
-
-export function safeAssetIdentifier(filename: string, taken: Set<string>): string {
-  const stem = filename.replace(/\.[^.]+$/, '');
-  let camel = '';
-  let upper = false;
-  for (const ch of stem) {
-    if (/[A-Za-z0-9]/.test(ch)) {
-      camel += upper ? ch.toUpperCase() : ch;
-      upper = false;
-    } else {
-      upper = camel.length > 0;
-    }
-  }
-  let base = camel;
-  if (!base || !/^[A-Za-z_$]/.test(base)) {
-    base = `asset${base.charAt(0).toUpperCase()}${base.slice(1)}` || 'asset';
-  }
-  base = base.charAt(0).toLowerCase() + base.slice(1);
-  let candidate = base;
-  let i = 2;
-  while (taken.has(candidate)) {
-    candidate = `${base}${i}`;
-    i += 1;
-  }
-  return candidate;
-}
-
 type AssetEditPlan = {
   importSplice: Splice | null;
   attrSplice: Splice;
 };
 
-function planAssetImport(
+export function planAssetImport(
   ast: t.File,
   assetPath: string,
 ): { identifier: string; importSplice: Splice | null } {
@@ -1289,24 +1129,6 @@ type PlaceholderEditPlan = {
   importSplice: Splice | null;
   elementSplice: Splice;
 };
-
-function readJsxStringAttr(opening: t.JSXOpeningElement, name: string): string | null {
-  const attr = findJsxAttr(opening, name);
-  const v = attr?.value;
-  if (!v) return null;
-  if (t.isStringLiteral(v)) return v.value;
-  if (t.isJSXExpressionContainer(v) && t.isStringLiteral(v.expression)) return v.expression.value;
-  return null;
-}
-
-function readJsxNumberAttr(opening: t.JSXOpeningElement, name: string): number | null {
-  const attr = findJsxAttr(opening, name);
-  const v = attr?.value;
-  if (!v || !t.isJSXExpressionContainer(v)) return null;
-  if (!t.isNumericLiteral(v.expression)) return null;
-  const n = v.expression.value;
-  return Number.isFinite(n) ? n : null;
-}
 
 function planReplacePlaceholder(
   ast: t.File,
@@ -1442,373 +1264,4 @@ export function applyEdit(
     return { ok: false, status: 422, error: 'edit would produce invalid source' };
   }
   return { ok: true, source: next };
-}
-
-type ImgSrcUse = { element: t.JSXElement; identNode: t.Identifier };
-
-function collectImgSrcUses(ast: t.File, identifier: string): ImgSrcUse[] {
-  const uses: ImgSrcUse[] = [];
-  walkJsx(ast, (n) => {
-    if (!t.isJSXElement(n)) return;
-    const opening = n.openingElement;
-    if (!t.isJSXIdentifier(opening.name) || opening.name.name !== 'img') return;
-    const src = findJsxAttr(opening, 'src');
-    if (!src?.value) return;
-    if (!t.isJSXExpressionContainer(src.value)) return;
-    const expr = src.value.expression;
-    if (!t.isIdentifier(expr) || expr.name !== identifier) return;
-    uses.push({ element: n, identNode: expr });
-  });
-  return uses;
-}
-
-function readStyleNumericDim(opening: t.JSXOpeningElement, key: 'width' | 'height'): number | null {
-  const style = findJsxAttr(opening, 'style');
-  if (!style?.value) return null;
-  if (!t.isJSXExpressionContainer(style.value)) return null;
-  const obj = style.value.expression;
-  if (!t.isObjectExpression(obj)) return null;
-  for (const prop of obj.properties) {
-    if (!t.isObjectProperty(prop)) continue;
-    if (prop.computed) continue;
-    const k = prop.key;
-    const keyName = t.isIdentifier(k) ? k.name : t.isStringLiteral(k) ? k.value : null;
-    if (keyName !== key) continue;
-    const v = prop.value;
-    if (t.isNumericLiteral(v) && Number.isFinite(v.value)) return v.value;
-    return null;
-  }
-  return null;
-}
-
-function buildPlaceholderReplacement(
-  hint: string,
-  width: number | null,
-  height: number | null,
-): string {
-  const parts: string[] = [`hint=${formatJsxAttrValue(hint)}`];
-  if (width != null) parts.push(`width={${width}}`);
-  if (height != null) parts.push(`height={${height}}`);
-  return `<ImagePlaceholder ${parts.join(' ')} />`;
-}
-
-function planEnsureImagePlaceholderImport(ast: t.File): Splice | null {
-  const readKind = (n: t.ImportDeclaration | t.ImportSpecifier) => n.importKind === 'type';
-  const imports = findImports(ast);
-  let valueImport: ImportInfo | null = null;
-  for (const imp of imports) {
-    if (imp.source !== '@open-slide/core') continue;
-    const declIsTypeOnly = readKind(imp.node);
-    for (const spec of imp.node.specifiers) {
-      if (!t.isImportSpecifier(spec)) continue;
-      const imported = spec.imported;
-      const name = t.isIdentifier(imported) ? imported.name : imported.value;
-      if (name !== 'ImagePlaceholder') continue;
-      const specIsTypeOnly = readKind(spec) || declIsTypeOnly;
-      if (!specIsTypeOnly) return null;
-    }
-    if (!declIsTypeOnly && !valueImport) valueImport = imp;
-  }
-  if (valueImport) {
-    const node = valueImport.node;
-    const lastSpec = node.specifiers[node.specifiers.length - 1];
-    if (lastSpec && t.isImportSpecifier(lastSpec)) {
-      const insertAt = lastSpec.end ?? 0;
-      return { from: insertAt, to: insertAt, text: ', ImagePlaceholder' };
-    }
-    if (lastSpec && t.isImportDefaultSpecifier(lastSpec)) {
-      const insertAt = lastSpec.end ?? 0;
-      return { from: insertAt, to: insertAt, text: ', { ImagePlaceholder }' };
-    }
-    const insertAt = (node.source.start ?? 0) - 'from '.length;
-    return { from: insertAt, to: insertAt, text: '{ ImagePlaceholder } ' };
-  }
-  return {
-    from: 0,
-    to: 0,
-    text: "import { ImagePlaceholder } from '@open-slide/core';\n",
-  };
-}
-
-export function findAssetUsages(source: string, assetPath: string): number {
-  const ast = parseSource(source);
-  if (!ast) return 0;
-  const imports = findImports(ast);
-  const target = imports.find((imp) => imp.source === assetPath && imp.defaultIdent);
-  if (!target?.defaultIdent) return 0;
-  return collectImgSrcUses(ast, target.defaultIdent).length;
-}
-
-export function applyRevertAsset(source: string, assetPath: string): ApplyEditResult {
-  const ast = parseSource(source);
-  if (!ast) return { ok: false, status: 422, error: 'could not parse source' };
-
-  const imports = findImports(ast);
-  const target = imports.find((imp) => imp.source === assetPath && imp.defaultIdent);
-  if (!target?.defaultIdent) return { ok: true, source };
-  const identifier = target.defaultIdent;
-
-  const importLocal = (() => {
-    for (const spec of target.node.specifiers) {
-      if (t.isImportDefaultSpecifier(spec) && spec.local.name === identifier) return spec.local;
-    }
-    return null;
-  })();
-
-  const imgUses = collectImgSrcUses(ast, identifier);
-  const allowed = new Set<t.Identifier>(imgUses.map((u) => u.identNode));
-  if (importLocal) allowed.add(importLocal);
-
-  let foreign = false;
-  walkAll(ast, (n) => {
-    if (!t.isIdentifier(n) || n.name !== identifier) return;
-    if (!allowed.has(n)) foreign = true;
-  });
-  if (foreign) {
-    return {
-      ok: false,
-      status: 422,
-      error: `cannot revert: '${identifier}' is referenced outside <img src={${identifier}}>`,
-    };
-  }
-
-  const splices: Splice[] = [];
-
-  for (const use of imgUses) {
-    const opening = use.element.openingElement;
-    const hint = readJsxStringAttr(opening, 'alt') ?? '';
-    const width = readStyleNumericDim(opening, 'width');
-    const height = readStyleNumericDim(opening, 'height');
-    splices.push(spliceRange(use.element, buildPlaceholderReplacement(hint, width, height)));
-  }
-
-  const importNode = target.node;
-  const importFrom = importNode.start ?? 0;
-  let importTo = importNode.end ?? 0;
-  if (source[importTo] === '\n') importTo += 1;
-  splices.push({ from: importFrom, to: importTo, text: '' });
-
-  const ensureSplice = planEnsureImagePlaceholderImport(ast);
-  if (ensureSplice) splices.push(ensureSplice);
-
-  if (splices.length === 0) return { ok: true, source };
-
-  splices.sort((a, b) => b.from - a.from);
-  let next = source;
-  for (const sp of splices) {
-    next = next.slice(0, sp.from) + sp.text + next.slice(sp.to);
-  }
-  if (!parseSource(next)) {
-    return { ok: false, status: 422, error: 'edit would produce invalid source' };
-  }
-  return { ok: true, source: next };
-}
-
-export type CommentsPluginOptions = {
-  userCwd: string;
-  slidesDir?: string;
-};
-
-export function commentsPlugin(opts: CommentsPluginOptions): Plugin {
-  const userCwd = opts.userCwd;
-  const slidesDir = opts.slidesDir ?? 'slides';
-  return {
-    name: 'open-slide:comments',
-    apply: 'serve',
-    configureServer(server: ViteDevServer) {
-      server.middlewares.use('/__edit', async (req, res, next) => {
-        const url = new URL(req.url ?? '/', 'http://local');
-        const method = req.method ?? 'GET';
-        if (method !== 'POST') return next();
-        const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
-        if (!requestCheck.ok) return json(res, requestCheck.status, { error: requestCheck.error });
-
-        try {
-          if (url.pathname === '/') {
-            const body = (await readBody(req)) as EditBody;
-            const slideId = body.slideId ?? '';
-            const file = resolveSlidePath(userCwd, slidesDir, slideId);
-            if (!file) return json(res, 400, { error: 'invalid slideId' });
-            if (!body.line || body.line < 1) return json(res, 400, { error: 'invalid line' });
-            if (!Array.isArray(body.ops)) return json(res, 400, { error: 'missing ops' });
-
-            let source: string;
-            try {
-              source = await fs.readFile(file, 'utf8');
-            } catch {
-              return json(res, 404, { error: 'slide not found' });
-            }
-
-            const result = applyEdit(source, body.line, body.column ?? 0, body.ops);
-            if (!result.ok) return json(res, result.status, { error: result.error });
-            const changed = result.source !== source;
-            if (changed) await fs.writeFile(file, result.source, 'utf8');
-            return json(res, 200, { ok: true, changed });
-          }
-
-          if (url.pathname === '/revert-asset') {
-            const body = (await readBody(req)) as { slideId?: string; assetPath?: string };
-            const slideId = body.slideId ?? '';
-            const assetPath = body.assetPath;
-            const file = resolveSlidePath(userCwd, slidesDir, slideId);
-            if (!file) return json(res, 400, { error: 'invalid slideId' });
-            if (typeof assetPath !== 'string' || !assetPath) {
-              return json(res, 400, { error: 'missing assetPath' });
-            }
-            if (!assetPath.startsWith('./assets/') && !assetPath.startsWith('@assets/')) {
-              return json(res, 400, { error: 'asset path must start with ./assets/ or @assets/' });
-            }
-
-            let source: string;
-            try {
-              source = await fs.readFile(file, 'utf8');
-            } catch {
-              return json(res, 404, { error: 'slide not found' });
-            }
-
-            const result = applyRevertAsset(source, assetPath);
-            if (!result.ok) return json(res, result.status, { error: result.error });
-            const changed = result.source !== source;
-            if (changed) await fs.writeFile(file, result.source, 'utf8');
-            return json(res, 200, { ok: true, changed });
-          }
-
-          // One read-modify-write per batch so a multi-element edit
-          // session lands as a single HMR. Per-edit failures are
-          // reported but don't abort the batch.
-          if (url.pathname === '/batch') {
-            const body = (await readBody(req)) as EditBatchBody;
-            const slideId = body.slideId ?? '';
-            const file = resolveSlidePath(userCwd, slidesDir, slideId);
-            if (!file) return json(res, 400, { error: 'invalid slideId' });
-            if (!Array.isArray(body.edits)) return json(res, 400, { error: 'missing edits' });
-
-            let source: string;
-            try {
-              source = await fs.readFile(file, 'utf8');
-            } catch {
-              return json(res, 404, { error: 'slide not found' });
-            }
-
-            const original = source;
-            const results: Array<{ ok: boolean; error?: string }> = [];
-            for (const edit of body.edits) {
-              if (!edit.line || edit.line < 1 || !Array.isArray(edit.ops)) {
-                results.push({ ok: false, error: 'invalid edit' });
-                continue;
-              }
-              const r = applyEdit(source, edit.line, edit.column ?? 0, edit.ops);
-              if (r.ok) {
-                source = r.source;
-                results.push({ ok: true });
-              } else {
-                results.push({ ok: false, error: r.error });
-              }
-            }
-            const changed = source !== original;
-            if (changed) await fs.writeFile(file, source, 'utf8');
-            return json(res, 200, { ok: true, changed, results });
-          }
-
-          return next();
-        } catch (err) {
-          json(res, 500, { error: String((err as Error).message ?? err) });
-        }
-      });
-
-      server.middlewares.use('/__comments', async (req, res, next) => {
-        const url = new URL(req.url ?? '/', 'http://local');
-        const method = req.method ?? 'GET';
-
-        try {
-          if (method === 'GET' && url.pathname === '/') {
-            const slideId = url.searchParams.get('slideId') ?? '';
-            const file = resolveSlidePath(userCwd, slidesDir, slideId);
-            if (!file) return json(res, 400, { error: 'invalid slideId' });
-            let source: string;
-            try {
-              source = await fs.readFile(file, 'utf8');
-            } catch {
-              return json(res, 404, { error: 'slide not found' });
-            }
-            return json(res, 200, { comments: parseMarkers(source) });
-          }
-
-          if (method === 'POST' && url.pathname === '/add') {
-            const requestCheck = validateMutationRequest(req, { requireJsonBody: true });
-            if (!requestCheck.ok) {
-              return json(res, requestCheck.status, { error: requestCheck.error });
-            }
-            const body = (await readBody(req)) as AddBody;
-            const slideId = body.slideId ?? '';
-            const file = resolveSlidePath(userCwd, slidesDir, slideId);
-            if (!file) return json(res, 400, { error: 'invalid slideId' });
-            if (!body.line || body.line < 1) return json(res, 400, { error: 'invalid line' });
-            if (!body.text || typeof body.text !== 'string') {
-              return json(res, 400, { error: 'missing text' });
-            }
-
-            let source: string;
-            try {
-              source = await fs.readFile(file, 'utf8');
-            } catch {
-              return json(res, 404, { error: 'slide not found' });
-            }
-
-            const plan = findInsertion(source, body.line, body.column);
-            if (!plan) {
-              return json(res, 422, {
-                error:
-                  'could not find a JSX container around line ' +
-                  `${body.line}. Try clicking a different element.`,
-              });
-            }
-
-            const id = newId();
-            const ts = new Date().toISOString();
-            const payload = b64urlEncode(JSON.stringify({ note: body.text, hint: body.hint }));
-            const marker = `\n${plan.indent}{/* @slide-comment id="${id}" ts="${ts}" text="${payload}" */}`;
-
-            const next = source.slice(0, plan.offset) + marker + source.slice(plan.offset);
-            await fs.writeFile(file, next, 'utf8');
-            const markerLine = offsetToLine(next, plan.offset + 1);
-            return json(res, 200, { id, line: markerLine });
-          }
-
-          if (method === 'DELETE' && url.pathname.startsWith('/')) {
-            const requestCheck = validateMutationRequest(req);
-            if (!requestCheck.ok) {
-              return json(res, requestCheck.status, { error: requestCheck.error });
-            }
-            const id = url.pathname.slice(1);
-            if (!/^c-[a-f0-9]+$/.test(id)) return json(res, 400, { error: 'invalid id' });
-            const slideId = url.searchParams.get('slideId') ?? '';
-            const file = resolveSlidePath(userCwd, slidesDir, slideId);
-            if (!file) return json(res, 400, { error: 'invalid slideId' });
-
-            let source: string;
-            try {
-              source = await fs.readFile(file, 'utf8');
-            } catch {
-              return json(res, 404, { error: 'slide not found' });
-            }
-
-            const lines = source.split('\n');
-            const idRe = new RegExp(
-              `\\{\\/\\*\\s*@slide-comment\\s+id="${id}"\\s+ts="[^"]+"\\s+text="[A-Za-z0-9_\\-]+={0,2}"\\s*\\*\\/\\}`,
-            );
-            const hit = lines.findIndex((l) => idRe.test(l));
-            if (hit === -1) return json(res, 404, { error: 'marker not found' });
-            lines.splice(hit, 1);
-            await fs.writeFile(file, lines.join('\n'), 'utf8');
-            return json(res, 200, { ok: true });
-          }
-
-          next();
-        } catch (err) {
-          json(res, 500, { error: String((err as Error).message ?? err) });
-        }
-      });
-    },
-  };
 }

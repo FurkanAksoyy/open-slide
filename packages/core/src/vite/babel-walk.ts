@@ -1,4 +1,5 @@
-import { isJSXElement, isJSXFragment, type Node } from '@babel/types';
+import { parse as babelParse } from '@babel/parser';
+import { type File, isJSXElement, isJSXFragment, type Node } from '@babel/types';
 
 // Loose structural type so plugins that hand-cast their way through
 // the AST (design-plugin etc.) keep compiling without null-checks on
@@ -58,4 +59,17 @@ export function walkJsx(ast: unknown, visit: Visitor): void {
 
 export function walkAll(ast: unknown, visit: Visitor): void {
   walk(ast, visit, acceptAll);
+}
+
+export function parseSource(source: string): File | null {
+  try {
+    const ast = babelParse(source, {
+      sourceType: 'module',
+      plugins: ['typescript', 'jsx'],
+      errorRecovery: true,
+    }) as File & { errors?: unknown[] };
+    return ast.errors && ast.errors.length > 0 ? null : ast;
+  } catch {
+    return null;
+  }
 }

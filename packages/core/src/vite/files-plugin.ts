@@ -4,8 +4,8 @@ import type { ServerResponse } from 'node:http';
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
-import { findAssetUsages } from './comments-plugin.ts';
 import { validateMutationRequest } from './request-guard.ts';
+import { findAssetUsages } from './revert-asset.ts';
 
 const FOLDER_ID_RE = /^f-[a-f0-9]{8}$/;
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;

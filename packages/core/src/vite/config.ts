@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import type { InlineConfig } from 'vite';
-import { commentsPlugin } from './comments-plugin.ts';
+import { apiPlugin } from './api-plugin.ts';
 import { currentPlugin } from './current-plugin.ts';
 import { designPlugin } from './design-plugin.ts';
 import { filesPlugin } from './files-plugin.ts';
@@ -52,7 +52,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       openSlidePlugin({ userCwd, config }),
       themesPlugin({ userCwd, config }),
       designPlugin({ userCwd }),
-      commentsPlugin({ userCwd, slidesDir }),
+      apiPlugin({ userCwd, slidesDir }),
       notesPlugin({ userCwd, slidesDir }),
       filesPlugin({ userCwd, slidesDir, assetsDir }),
       currentPlugin({ userCwd, slidesDir }),
