@@ -24,13 +24,12 @@ export function PresentLaserPointer({ enabled }: { enabled: boolean }) {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed z-[60]"
+      className="pointer-events-none fixed top-0 left-0 z-[60]"
       style={{
-        left: pos.x,
-        top: pos.y,
         width: 18,
         height: 18,
-        transform: 'translate(-50%, -50%)',
+        transform: `translate3d(${pos.x - 9}px, ${pos.y - 9}px, 0)`,
+        willChange: 'transform',
         borderRadius: '50%',
         background: 'radial-gradient(circle, oklch(0.66 0.24 28 / 0.95) 30%, transparent 70%)',
         boxShadow: '0 0 18px 4px oklch(0.66 0.24 28 / 0.55)',
