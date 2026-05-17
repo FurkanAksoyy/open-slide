@@ -2,7 +2,7 @@ import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import * as t from '@babel/types';
 import type { Plugin } from 'vite';
-import { walkJsx } from './babel-walk.ts';
+import { walkJsx } from '../editing/babel-walk.ts';
 
 // Inject `data-slide-loc="<line>:<col>"` onto every host JSX element in
 // slide source files so the inspector can map a click straight to a

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import * as t from '@babel/types';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
-import { validateMutationRequest } from './request-guard.ts';
+import { validateMutationRequest } from '../http/request-guard.ts';
 
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 

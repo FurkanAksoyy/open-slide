@@ -4,8 +4,8 @@ import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
 import { type DesignSystem, defaultDesign } from '../app/lib/design.ts';
-import type { AstNode } from './babel-walk.ts';
-import { validateMutationRequest } from './request-guard.ts';
+import type { AstNode } from '../editing/babel-walk.ts';
+import { validateMutationRequest } from '../http/request-guard.ts';
 
 const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 

@@ -3,33 +3,15 @@ import type { ServerResponse } from 'node:http';
 import path from 'node:path';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
 import {
-  ASSET_MAX_BYTES,
-  GLOBAL_SCOPE,
-  mimeForFilename,
-  resolveScopedAssetFile,
-  resolveScopedAssetsDir,
-  validateAssetName,
-} from './assets.ts';
-import {
   b64urlEncode,
   findInsertion,
   markerDeleteRegex,
   newCommentId,
   offsetToLine,
   parseMarkers,
-} from './comments.ts';
-import { applyEdit, type EditOp } from './edit-ops.ts';
-import {
-  FOLDER_ID_RE,
-  type Folder,
-  newFolderId,
-  readManifest,
-  validateIcon,
-  validateName,
-  writeManifest,
-} from './folders.ts';
-import { validateMutationRequest } from './request-guard.ts';
-import { applyRevertAsset, findAssetUsages } from './revert-asset.ts';
+} from '../editing/comments.ts';
+import { applyEdit, type EditOp } from '../editing/edit-ops.ts';
+import { applyRevertAsset, findAssetUsages } from '../editing/revert-asset.ts';
 import {
   duplicatePageInDefaultExportInSource,
   removePageFromDefaultExportInSource,
@@ -40,7 +22,25 @@ import {
   SLIDE_ID_RE,
   updateMetaTitleInSource,
   validateSlideName,
-} from './slide-ops.ts';
+} from '../editing/slide-ops.ts';
+import {
+  ASSET_MAX_BYTES,
+  GLOBAL_SCOPE,
+  mimeForFilename,
+  resolveScopedAssetFile,
+  resolveScopedAssetsDir,
+  validateAssetName,
+} from '../files/assets.ts';
+import {
+  FOLDER_ID_RE,
+  type Folder,
+  newFolderId,
+  readManifest,
+  validateIcon,
+  validateName,
+  writeManifest,
+} from '../files/folders.ts';
+import { validateMutationRequest } from '../http/request-guard.ts';
 
 type AddCommentBody = {
   slideId?: string;
