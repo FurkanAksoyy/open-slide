@@ -15,7 +15,8 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "sync:template-skills": "node scripts/sync-template-skills.mjs",
-    "prepack": "pnpm sync:template-skills && pnpm build"
+    "sync:core-version": "node scripts/sync-core-version.mjs",
+    "prepack": "pnpm sync:template-skills && pnpm sync:core-version && pnpm build"
   },
   "engines": {
     "node": ">=18"

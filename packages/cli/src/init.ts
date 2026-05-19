@@ -4,6 +4,7 @@ import { cp, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/pr
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
+import { CORE_VERSION_BAKED } from './core-version.ts';
 import { gitInitAndCommit } from './git.ts';
 import type { PackageManager } from './package-manager.ts';
 
@@ -43,11 +44,26 @@ export async function isDirNonEmpty(target: string): Promise<boolean> {
   return entries.some((e) => !e.startsWith('.'));
 }
 
-async function readCliVersion(): Promise<string> {
-  const pkg = JSON.parse(await readFile(resolve(HERE, '..', 'package.json'), 'utf8')) as {
-    version: string;
-  };
-  return pkg.version;
+async function fetchLatestCoreVersion(): Promise<string | null> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch('https://registry.npmjs.org/@open-slide/core/latest', {
+      signal: ctrl.signal,
+      headers: { accept: 'application/json' },
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = (await res.json()) as { version?: unknown };
+    return typeof data.version === 'string' && data.version.length > 0 ? data.version : null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveCoreVersionRange(): Promise<string> {
+  const latest = await fetchLatestCoreVersion();
+  return `^${latest ?? CORE_VERSION_BAKED}`;
 }
 
 async function linkOrCopy(relSrc: string, dst: string): Promise<void> {
@@ -144,7 +160,7 @@ export async function init(opts: InitOptions): Promise<void> {
     pkg.version = '0.0.0';
     pkg.private = true;
     if (pkg.dependencies?.['@open-slide/core']) {
-      pkg.dependencies['@open-slide/core'] = `^${await readCliVersion()}`;
+      pkg.dependencies['@open-slide/core'] = await resolveCoreVersionRange();
     }
     await writeFile(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
   }
