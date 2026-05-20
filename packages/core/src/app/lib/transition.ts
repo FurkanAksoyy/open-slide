@@ -4,6 +4,7 @@ export type TransitionPhase = {
   keyframes: Keyframe[] | PropertyIndexedKeyframes;
   easing?: string;
   duration?: number;
+  delay?: number;
 };
 
 export type SlideTransition = {

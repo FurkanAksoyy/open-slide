@@ -25,7 +25,8 @@ function runPhase(
   return el.animate(phase.keyframes, {
     duration: phase.duration ?? fallbackDuration,
     easing: phase.easing ?? fallbackEasing,
-    fill: 'forwards',
+    delay: phase.delay ?? 0,
+    fill: 'both',
   });
 }
 
@@ -129,7 +130,11 @@ export function SlideTransitionLayer({ pages, index, total, moduleTransition, di
   const OutgoingPage = outgoing !== null ? pages[outgoing] : null;
 
   return (
-    <div ref={wrapperRef} className="relative h-full w-full">
+    <div
+      ref={wrapperRef}
+      className="relative h-full w-full"
+      style={{ background: 'var(--osd-bg)' }}
+    >
       {OutgoingPage && outgoing !== null ? (
         <div ref={outgoingLayerRef} className="absolute inset-0">
           <SlidePageProvider index={outgoing} total={total}>

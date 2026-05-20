@@ -1,18 +1,18 @@
 import type { DesignSystem, Page, SlideMeta, SlideTransition } from '@open-slide/core';
-import type { ReactNode } from 'react';
+import type { CSSProperties } from 'react';
 
 export const design: DesignSystem = {
-  palette: { bg: '#0b0b0c', text: '#f5f4ef', accent: '#ffd66e' },
+  palette: { bg: '#0c0c0d', text: '#f3f1ea', accent: '#d6d2c4' },
   fonts: {
     display: 'ui-serif, Georgia, "Times New Roman", serif',
     body: '-apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif',
   },
-  typeScale: { hero: 176, body: 36 },
-  radius: 8,
+  typeScale: { hero: 168, body: 34 },
+  radius: 6,
 };
 
-const muted = '#8a8a86';
-const hairline = 'rgba(245, 244, 239, 0.12)';
+const muted = 'rgba(243, 241, 234, 0.42)';
+const hairline = 'rgba(243, 241, 234, 0.10)';
 
 const fill = {
   width: '100%',
@@ -22,394 +22,325 @@ const fill = {
   color: 'var(--osd-text)',
 } as const;
 
-const Frame = ({
-  eyebrow,
-  title,
-  caption,
-  swatch,
-}: {
-  eyebrow: string;
-  title: string;
-  caption: string;
-  swatch: ReactNode;
-}) => (
-  <div
-    style={{
-      ...fill,
-      display: 'grid',
-      gridTemplateColumns: '1fr 720px',
-      gap: 96,
-      padding: '128px 144px',
-    }}
-  >
-    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-      <div
-        style={{
-          fontSize: 22,
-          letterSpacing: '0.32em',
-          color: 'var(--osd-accent)',
-          textTransform: 'uppercase',
-        }}
-      >
-        {eyebrow}
-      </div>
-      <div>
-        <h1
-          style={{
-            fontFamily: 'var(--osd-font-display)',
-            fontSize: 132,
-            fontWeight: 500,
-            lineHeight: 1.02,
-            letterSpacing: '-0.02em',
-            margin: 0,
-            whiteSpace: 'pre-line',
-          }}
-        >
-          {title}
-        </h1>
-        <p
-          style={{
-            fontSize: 32,
-            lineHeight: 1.5,
-            color: muted,
-            marginTop: 40,
-            maxWidth: 720,
-          }}
-        >
-          {caption}
-        </p>
-      </div>
-      <div
-        style={{
-          fontSize: 22,
-          letterSpacing: '0.18em',
-          color: muted,
-          textTransform: 'uppercase',
-        }}
-      >
-        Arrow keys ⇆ to navigate
-      </div>
-    </div>
-    <div
-      style={{
-        position: 'relative',
-        borderLeft: `1px solid ${hairline}`,
-        paddingLeft: 96,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {swatch}
-    </div>
-  </div>
-);
+const EYEBROW: CSSProperties = {
+  fontSize: 20,
+  letterSpacing: '0.28em',
+  color: 'var(--osd-accent)',
+  textTransform: 'uppercase',
+  fontWeight: 500,
+};
 
-const SwatchBox = ({ children }: { children: ReactNode }) => (
-  <div
-    style={{
-      width: 520,
-      height: 520,
-      borderRadius: 'var(--osd-radius)',
-      border: `1px solid ${hairline}`,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-    }}
-  >
-    {children}
-  </div>
-);
+const FOOT: CSSProperties = {
+  fontSize: 18,
+  letterSpacing: '0.22em',
+  color: muted,
+  textTransform: 'uppercase',
+  fontVariantNumeric: 'tabular-nums',
+};
 
 const Cover: Page = () => (
   <div
     style={{
       ...fill,
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      padding: '128px 144px',
+      display: 'grid',
+      gridTemplateRows: 'auto 1fr auto',
+      padding: '120px 144px',
     }}
   >
-    <div
-      style={{
-        fontSize: 22,
-        letterSpacing: '0.32em',
-        color: 'var(--osd-accent)',
-        textTransform: 'uppercase',
-      }}
-    >
-      open-slide · demo
-    </div>
-    <div>
+    <div style={EYEBROW}>open-slide · field notes</div>
+    <div style={{ alignSelf: 'center' }}>
       <h1
         style={{
           fontFamily: 'var(--osd-font-display)',
           fontSize: 'var(--osd-size-hero)',
-          fontWeight: 500,
-          lineHeight: 0.95,
-          letterSpacing: '-0.03em',
+          fontWeight: 400,
+          lineHeight: 0.96,
+          letterSpacing: '-0.035em',
           margin: 0,
         }}
       >
-        Slide
+        On tasteful
         <br />
-        Transitions.
+        transitions.
       </h1>
       <p
         style={{
-          fontSize: 36,
-          lineHeight: 1.45,
+          fontSize: 32,
+          lineHeight: 1.5,
           color: muted,
-          marginTop: 56,
-          maxWidth: 1120,
+          marginTop: 48,
+          maxWidth: 980,
+          fontStyle: 'italic',
         }}
       >
-        Each page declares its own enter / exit animation. The framework owns the lifecycle; the
-        page owns the look. Arrow → to begin.
+        Six pages, one transition, almost no motion.
       </p>
     </div>
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        fontSize: 22,
-        letterSpacing: '0.18em',
-        color: muted,
-        textTransform: 'uppercase',
-      }}
-    >
-      <span>page 01</span>
-      <span>module default · fade</span>
+    <div style={{ ...FOOT, display: 'flex', justifyContent: 'space-between' }}>
+      <span>01</span>
+      <span>arrow keys ⇆</span>
     </div>
   </div>
 );
 
-const SlideRight: Page = () => (
-  <Frame
-    eyebrow="page 02 · slide-from-side"
-    title={'Translate\nfrom the edge.'}
-    caption="Forward enters from the right, backward from the left — the same definition mirrors via the --osd-dir CSS variable."
-    swatch={
-      <SwatchBox>
-        <div
+const Lesson = ({
+  n,
+  heading,
+  body,
+  pull,
+}: {
+  n: string;
+  heading: string;
+  body: string;
+  pull: string;
+}) => (
+  <div
+    style={{
+      ...fill,
+      display: 'grid',
+      gridTemplateRows: 'auto 1fr auto',
+      padding: '120px 144px',
+    }}
+  >
+    <div style={EYEBROW}>{`§ ${n}`}</div>
+    <div
+      style={{
+        alignSelf: 'center',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        columnGap: 120,
+        alignItems: 'start',
+      }}
+    >
+      <h2
+        style={{
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 92,
+          fontWeight: 400,
+          lineHeight: 1.02,
+          letterSpacing: '-0.025em',
+          margin: 0,
+        }}
+      >
+        {heading}
+      </h2>
+      <div>
+        <p
           style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(135deg, rgba(255,214,110,0.18), rgba(255,214,110,0) 60%)',
-          }}
-        />
-        <span
-          style={{
-            fontFamily: 'var(--osd-font-display)',
-            fontSize: 220,
-            color: 'var(--osd-accent)',
-            letterSpacing: '-0.04em',
-          }}
-        >
-          →
-        </span>
-      </SwatchBox>
-    }
-  />
-);
-
-SlideRight.transition = {
-  duration: 520,
-  easing: 'cubic-bezier(.22, 1, .36, 1)',
-  enter: {
-    keyframes: [
-      { transform: 'translateX(calc(var(--osd-dir, 1) * 100%))', opacity: 0.6 },
-      { transform: 'translateX(0)', opacity: 1 },
-    ],
-  },
-  exit: {
-    keyframes: [
-      { transform: 'translateX(0)', opacity: 1 },
-      { transform: 'translateX(calc(var(--osd-dir, 1) * -28%))', opacity: 0 },
-    ],
-  },
-};
-
-const ScalePop: Page = () => (
-  <Frame
-    eyebrow="page 03 · scale-pop"
-    title={'Scale and\nsoften in.'}
-    caption="Incoming page grows from 88% with a slight blur falloff. Outgoing page lifts away."
-    swatch={
-      <SwatchBox>
-        <div
-          style={{
-            width: 280,
-            height: 280,
-            borderRadius: '50%',
-            background: 'var(--osd-accent)',
-          }}
-        />
-      </SwatchBox>
-    }
-  />
-);
-
-ScalePop.transition = {
-  duration: 460,
-  easing: 'cubic-bezier(.16, 1, .3, 1)',
-  enter: {
-    keyframes: [
-      { transform: 'scale(0.88)', filter: 'blur(8px)', opacity: 0 },
-      { transform: 'scale(1)', filter: 'blur(0)', opacity: 1 },
-    ],
-  },
-  exit: {
-    keyframes: [
-      { transform: 'scale(1)', opacity: 1 },
-      { transform: 'scale(1.06)', opacity: 0 },
-    ],
-  },
-};
-
-const ClipWipe: Page = () => (
-  <Frame
-    eyebrow="page 04 · clip-wipe"
-    title={'Reveal under\na moving edge.'}
-    caption="An inset clip-path wipes the incoming page in from a single edge — direction-aware."
-    swatch={
-      <SwatchBox>
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background:
-              'repeating-linear-gradient(90deg, var(--osd-text) 0 2px, transparent 2px 96px)',
-            opacity: 0.5,
-          }}
-        />
-      </SwatchBox>
-    }
-  />
-);
-
-ClipWipe.transition = {
-  duration: 560,
-  easing: 'cubic-bezier(.65, 0, .35, 1)',
-  enter: {
-    keyframes: [
-      {
-        clipPath:
-          'inset(0 calc(50% - var(--osd-dir, 1) * 50%) 0 calc(50% + var(--osd-dir, 1) * 50%))',
-      },
-      { clipPath: 'inset(0 0 0 0)' },
-    ],
-  },
-  exit: {
-    keyframes: [{ opacity: 1 }, { opacity: 0.4 }],
-  },
-};
-
-const BlurCross: Page = () => (
-  <Frame
-    eyebrow="page 05 · blur-cross"
-    title={'Cross-fade\nthrough blur.'}
-    caption="Both layers run in parallel. Outgoing page blurs and fades; incoming page sharpens in."
-    swatch={
-      <SwatchBox>
-        <div
-          style={{
-            fontFamily: 'var(--osd-font-display)',
-            fontSize: 380,
-            lineHeight: 0.9,
-            letterSpacing: '-0.04em',
+            fontSize: 36,
+            lineHeight: 1.45,
             color: 'var(--osd-text)',
+            margin: 0,
+            fontFamily: 'var(--osd-font-display)',
+            fontStyle: 'italic',
           }}
         >
-          ✦
-        </div>
-      </SwatchBox>
-    }
+          “{pull}”
+        </p>
+        <p
+          style={{
+            fontSize: 26,
+            lineHeight: 1.6,
+            color: muted,
+            marginTop: 56,
+            borderTop: `1px solid ${hairline}`,
+            paddingTop: 32,
+          }}
+        >
+          {body}
+        </p>
+      </div>
+    </div>
+    <div style={{ ...FOOT, display: 'flex', justifyContent: 'space-between' }}>
+      <span>{n}</span>
+      <span>house transition · quiet</span>
+    </div>
+  </div>
+);
+
+const OneCurve: Page = () => (
+  <Lesson
+    n="02"
+    heading={'Pick one\ntransition.'}
+    pull="Variety is the loudest signal of made-in-PowerPoint."
+    body="Refined decks use a single house transition across every slide. The reader stops noticing it after page two — which is exactly the point. Motion that announces itself is motion that interrupts."
   />
 );
 
-BlurCross.transition = {
-  duration: 540,
-  easing: 'cubic-bezier(.4, 0, .2, 1)',
-  enter: {
-    keyframes: [
-      { filter: 'blur(24px)', opacity: 0 },
-      { filter: 'blur(0)', opacity: 1 },
-    ],
-  },
-  exit: {
-    keyframes: [
-      { filter: 'blur(0)', opacity: 1 },
-      { filter: 'blur(24px)', opacity: 0 },
-    ],
-  },
-};
+const ShortDurations: Page = () => (
+  <Lesson
+    n="03"
+    heading={'Two hundred\nmilliseconds.'}
+    pull="If you can feel the duration, it's already too long."
+    body="A slide change happens in 140 ms of exit and 200 ms of enter, overlapped. Anything past 350 ms drifts into video-editor territory — meaningful only when something large is genuinely transforming on screen."
+  />
+);
 
-const End: Page = () => (
+const Pause: Page = () => (
   <div
     style={{
       ...fill,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
-      alignItems: 'flex-start',
-      padding: '0 200px',
+      alignItems: 'center',
+      padding: 144,
+      textAlign: 'center',
     }}
   >
-    <div
-      style={{
-        fontSize: 22,
-        letterSpacing: '0.32em',
-        color: 'var(--osd-accent)',
-        textTransform: 'uppercase',
-        marginBottom: 56,
-      }}
-    >
-      page 06 · back to default fade
-    </div>
-    <h1
+    <div style={{ ...EYEBROW, marginBottom: 72 }}>§ intermission</div>
+    <h2
       style={{
         fontFamily: 'var(--osd-font-display)',
-        fontSize: 160,
-        fontWeight: 500,
-        lineHeight: 0.98,
-        letterSpacing: '-0.03em',
+        fontSize: 200,
+        fontWeight: 400,
+        lineHeight: 0.95,
+        letterSpacing: '-0.04em',
         margin: 0,
-        maxWidth: 1400,
       }}
     >
-      Author owns the look.
-      <br />
-      Framework owns the rest.
-    </h1>
+      Restraint.
+    </h2>
     <p
       style={{
-        fontSize: 32,
+        fontSize: 28,
         lineHeight: 1.5,
         color: muted,
-        marginTop: 56,
-        maxWidth: 1200,
+        marginTop: 64,
+        maxWidth: 800,
+        fontStyle: 'italic',
       }}
     >
-      Per-page <code style={{ color: 'var(--osd-text)' }}>Page.transition</code> overrides the
-      module-level default. Anything WAAPI can animate, you can animate.
+      A chapter deserves a breath. One reserved transition, used twice in a deck.
     </p>
   </div>
 );
 
+const SmallMagnitudes: Page = () => (
+  <Lesson
+    n="05"
+    heading={'Six pixels,\nnot nineteen-twenty.'}
+    pull="The brain reads small motion as continuity, large motion as rupture."
+    body="A six-pixel rise reads as the next thought. A full-width translate reads as a different document. Premium tools move things barely enough to be perceived — opacity 0 to 1, plus a hair of vertical drift, and nothing else."
+  />
+);
+
+const Closing: Page = () => (
+  <div
+    style={{
+      ...fill,
+      display: 'grid',
+      gridTemplateRows: 'auto 1fr auto',
+      padding: '120px 144px',
+    }}
+  >
+    <div style={EYEBROW}>fin</div>
+    <div style={{ alignSelf: 'center', maxWidth: 1400 }}>
+      <h2
+        style={{
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 140,
+          fontWeight: 400,
+          lineHeight: 0.98,
+          letterSpacing: '-0.03em',
+          margin: 0,
+        }}
+      >
+        Good motion is
+        <br />
+        <em style={{ fontStyle: 'italic' }}>invisible</em>.
+      </h2>
+      <p
+        style={{
+          fontSize: 26,
+          lineHeight: 1.6,
+          color: muted,
+          marginTop: 56,
+          maxWidth: 920,
+          borderTop: `1px solid ${hairline}`,
+          paddingTop: 32,
+        }}
+      >
+        The framework gives you the canvas and the lifecycle. Pick one quiet transition, and let the
+        writing carry the deck.
+      </p>
+    </div>
+    <div style={{ ...FOOT, display: 'flex', justifyContent: 'space-between' }}>
+      <span>06 / 06</span>
+      <span>← to revisit</span>
+    </div>
+  </div>
+);
+
+// House transition — applied to every page that doesn't override.
+// Out-then-in with overlap: exit starts immediately, enter delays 80ms.
+// Tiny rise (4-6px), short durations, asymmetric easing per direction.
 export const transition: SlideTransition = {
+  duration: 200,
+  easing: 'cubic-bezier(0, 0, 0.2, 1)',
+  exit: {
+    duration: 140,
+    easing: 'cubic-bezier(0.4, 0, 1, 1)',
+    keyframes: [
+      { opacity: 1, transform: 'translateY(0)' },
+      { opacity: 0, transform: 'translateY(-4px)' },
+    ],
+  },
+  enter: {
+    duration: 200,
+    delay: 80,
+    keyframes: [
+      { opacity: 0, transform: 'translateY(6px)' },
+      { opacity: 1, transform: 'translateY(0)' },
+    ],
+  },
+};
+
+// Cover variant — slightly more generous rise + a touch of blur on enter only.
+// Reserved for hero/title pages.
+Cover.transition = {
   duration: 280,
-  easing: 'cubic-bezier(.4, 0, .2, 1)',
-  enter: { keyframes: [{ opacity: 0 }, { opacity: 1 }] },
-  exit: { keyframes: [{ opacity: 1 }, { opacity: 0 }] },
+  easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
+  exit: {
+    duration: 160,
+    easing: 'cubic-bezier(0.4, 0, 1, 1)',
+    keyframes: [
+      { opacity: 1, transform: 'translateY(0)' },
+      { opacity: 0, transform: 'translateY(-6px)' },
+    ],
+  },
+  enter: {
+    duration: 280,
+    delay: 100,
+    keyframes: [
+      { opacity: 0, transform: 'translateY(12px)', filter: 'blur(4px)' },
+      { opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' },
+    ],
+  },
+};
+
+// Section-break variant — exit fully, hold for a beat, then enter.
+// Reserved for genuine chapter changes. Used once in this deck.
+Pause.transition = {
+  duration: 460,
+  easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  exit: {
+    duration: 180,
+    keyframes: [{ opacity: 1 }, { opacity: 0 }],
+  },
+  enter: {
+    duration: 240,
+    delay: 300,
+    keyframes: [
+      { opacity: 0, transform: 'translateY(8px)' },
+      { opacity: 1, transform: 'translateY(0)' },
+    ],
+  },
 };
 
 export const meta: SlideMeta = {
-  title: 'Slide Transitions',
-  createdAt: '2026-05-20T06:00:40.271Z',
+  title: 'On Tasteful Transitions',
+  createdAt: '2026-05-20T06:12:31.353Z',
 };
 
-export default [Cover, SlideRight, ScalePop, ClipWipe, BlurCross, End] satisfies Page[];
+export default [Cover, OneCurve, ShortDurations, Pause, SmallMagnitudes, Closing] satisfies Page[];
