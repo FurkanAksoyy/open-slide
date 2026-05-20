@@ -73,11 +73,11 @@ const Cover: Page = () => (
           fontStyle: 'italic',
         }}
       >
-        Six pages, one transition, almost no motion.
+        Six pages, six transitions, one quiet family of motion.
       </p>
     </div>
     <div style={{ ...FOOT, display: 'flex', justifyContent: 'space-between' }}>
-      <span>01</span>
+      <span>01 · settle</span>
       <span>arrow keys ⇆</span>
     </div>
   </div>
@@ -85,11 +85,13 @@ const Cover: Page = () => (
 
 const Lesson = ({
   n,
+  label,
   heading,
   body,
   pull,
 }: {
   n: string;
+  label: string;
   heading: string;
   body: string;
   pull: string;
@@ -152,27 +154,31 @@ const Lesson = ({
       </div>
     </div>
     <div style={{ ...FOOT, display: 'flex', justifyContent: 'space-between' }}>
-      <span>{n}</span>
-      <span>house transition · quiet</span>
+      <span>
+        {n} · {label}
+      </span>
+      <span>transition · {label}</span>
     </div>
   </div>
 );
 
-const OneCurve: Page = () => (
+const Family: Page = () => (
   <Lesson
     n="02"
-    heading={'Pick one\ntransition.'}
-    pull="Variety is the loudest signal of made-in-PowerPoint."
-    body="Refined decks use a single house transition across every slide. The reader stops noticing it after page two — which is exactly the point. Motion that announces itself is motion that interrupts."
+    label="dissolve"
+    heading={'A family,\nnot a sampler.'}
+    pull="Vary the property — never the vocabulary."
+    body="Every transition in this deck shares the same DNA: a 140 ms exit, a 200 ms enter delayed 80 ms, and ease-out on the way in. What changes is only which property gets nudged — opacity, six pixels of Y, three hundredths of scale, a hair of blur. Restraint is the rhythm; difference lives at the edges."
   />
 );
 
 const ShortDurations: Page = () => (
   <Lesson
     n="03"
+    label="rise"
     heading={'Two hundred\nmilliseconds.'}
-    pull="If you can feel the duration, it's already too long."
-    body="A slide change happens in 140 ms of exit and 200 ms of enter, overlapped. Anything past 350 ms drifts into video-editor territory — meaningful only when something large is genuinely transforming on screen."
+    pull="If you can feel the duration, it is already too long."
+    body="The house default — opacity plus six pixels of vertical rise, exit and enter overlapped. Brisk enough to be invisible, slow enough to read as continuity. Anything past 350 ms drifts into video-editor territory; reserve that range for moments that genuinely transform on screen."
   />
 );
 
@@ -211,17 +217,32 @@ const Pause: Page = () => (
         fontStyle: 'italic',
       }}
     >
-      A chapter deserves a breath. One reserved transition, used twice in a deck.
+      A chapter deserves a breath — exit, hold, then return.
     </p>
+    <div
+      style={{
+        ...FOOT,
+        position: 'absolute',
+        left: 144,
+        right: 144,
+        bottom: 120,
+        display: 'flex',
+        justifyContent: 'space-between',
+      }}
+    >
+      <span>04 · breath</span>
+      <span>transition · breath</span>
+    </div>
   </div>
 );
 
 const SmallMagnitudes: Page = () => (
   <Lesson
     n="05"
-    heading={'Six pixels,\nnot nineteen-twenty.'}
-    pull="The brain reads small motion as continuity, large motion as rupture."
-    body="A six-pixel rise reads as the next thought. A full-width translate reads as a different document. Premium tools move things barely enough to be perceived — opacity 0 to 1, plus a hair of vertical drift, and nothing else."
+    label="bloom"
+    heading={'Three percent,\nnot thirty.'}
+    pull="Small motion reads as continuity; large motion reads as rupture."
+    body="This page scales in from ninety-seven percent — barely enough to register, more than enough to feel arrival. The brain forgives almost any motion that stays under three percent of magnitude; past that, it starts to demand a reason."
   />
 );
 
@@ -261,49 +282,32 @@ const Closing: Page = () => (
           paddingTop: 32,
         }}
       >
-        The framework gives you the canvas and the lifecycle. Pick one quiet transition, and let the
-        writing carry the deck.
+        Six different moves, none of which announce themselves. The reader perceives variety; the
+        eye still reads one consistent hand.
       </p>
     </div>
     <div style={{ ...FOOT, display: 'flex', justifyContent: 'space-between' }}>
-      <span>06 / 06</span>
+      <span>06 · fall</span>
       <span>← to revisit</span>
     </div>
   </div>
 );
 
-// House transition — applied to every page that doesn't override.
-// Out-then-in with overlap: exit starts immediately, enter delays 80ms.
-// Tiny rise (4-6px), short durations, asymmetric easing per direction.
-export const transition: SlideTransition = {
-  duration: 200,
-  easing: 'cubic-bezier(0, 0, 0.2, 1)',
-  exit: {
-    duration: 140,
-    easing: 'cubic-bezier(0.4, 0, 1, 1)',
-    keyframes: [
-      { opacity: 1, transform: 'translateY(0)' },
-      { opacity: 0, transform: 'translateY(-4px)' },
-    ],
-  },
-  enter: {
-    duration: 200,
-    delay: 80,
-    keyframes: [
-      { opacity: 0, transform: 'translateY(6px)' },
-      { opacity: 1, transform: 'translateY(0)' },
-    ],
-  },
-};
+// Shared DNA across all six transitions:
+//   - Out-then-in with 80 ms overlap (exit starts immediately, enter delays).
+//   - Exit ~140-180 ms · ease-in.  Enter ~200-280 ms · ease-out.
+//   - Opacity is always one of the animated properties.
+//   - Translate magnitude never exceeds 12px.  Scale never exceeds 3%.
+const EASE_OUT = 'cubic-bezier(0, 0, 0.2, 1)';
+const EASE_IN = 'cubic-bezier(0.4, 0, 1, 1)';
 
-// Cover variant — slightly more generous rise + a touch of blur on enter only.
-// Reserved for hero/title pages.
+// 1 · SETTLE — cover-grade. Rise + soft blur falloff on enter.
 Cover.transition = {
   duration: 280,
   easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
   exit: {
     duration: 160,
-    easing: 'cubic-bezier(0.4, 0, 1, 1)',
+    easing: EASE_IN,
     keyframes: [
       { opacity: 1, transform: 'translateY(0)' },
       { opacity: 0, transform: 'translateY(-6px)' },
@@ -312,6 +316,7 @@ Cover.transition = {
   enter: {
     duration: 280,
     delay: 100,
+    easing: EASE_OUT,
     keyframes: [
       { opacity: 0, transform: 'translateY(12px)', filter: 'blur(4px)' },
       { opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' },
@@ -319,20 +324,103 @@ Cover.transition = {
   },
 };
 
-// Section-break variant — exit fully, hold for a beat, then enter.
-// Reserved for genuine chapter changes. Used once in this deck.
+// 2 · DISSOLVE — pure opacity. Apple's safe default. Quietest possible.
+Family.transition = {
+  duration: 240,
+  exit: {
+    duration: 200,
+    easing: EASE_IN,
+    keyframes: [{ opacity: 1 }, { opacity: 0 }],
+  },
+  enter: {
+    duration: 240,
+    delay: 40,
+    easing: EASE_OUT,
+    keyframes: [{ opacity: 0 }, { opacity: 1 }],
+  },
+};
+
+// 3 · RISE — the house quiet. 6 px of Y, exit-then-enter overlap.
+// Exported as the module default so future pages inherit it.
+export const transition: SlideTransition = {
+  duration: 200,
+  exit: {
+    duration: 140,
+    easing: EASE_IN,
+    keyframes: [
+      { opacity: 1, transform: 'translateY(0)' },
+      { opacity: 0, transform: 'translateY(-4px)' },
+    ],
+  },
+  enter: {
+    duration: 200,
+    delay: 80,
+    easing: EASE_OUT,
+    keyframes: [
+      { opacity: 0, transform: 'translateY(6px)' },
+      { opacity: 1, transform: 'translateY(0)' },
+    ],
+  },
+};
+
+// 4 · BREATH — section divider. Exit fully, hold 120 ms, then enter.
 Pause.transition = {
   duration: 460,
-  easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
   exit: {
     duration: 180,
+    easing: EASE_IN,
     keyframes: [{ opacity: 1 }, { opacity: 0 }],
   },
   enter: {
     duration: 240,
     delay: 300,
+    easing: EASE_OUT,
     keyframes: [
       { opacity: 0, transform: 'translateY(8px)' },
+      { opacity: 1, transform: 'translateY(0)' },
+    ],
+  },
+};
+
+// 5 · BLOOM — scale only. 0.97 → 1, no translate. Materializes in place.
+SmallMagnitudes.transition = {
+  duration: 240,
+  exit: {
+    duration: 160,
+    easing: EASE_IN,
+    keyframes: [
+      { opacity: 1, transform: 'scale(1)' },
+      { opacity: 0, transform: 'scale(1.01)' },
+    ],
+  },
+  enter: {
+    duration: 240,
+    delay: 80,
+    easing: EASE_OUT,
+    keyframes: [
+      { opacity: 0, transform: 'scale(0.97)' },
+      { opacity: 1, transform: 'scale(1)' },
+    ],
+  },
+};
+
+// 6 · FALL — mirrored Rise. Enters from above; the deck settles to a stop.
+Closing.transition = {
+  duration: 200,
+  exit: {
+    duration: 140,
+    easing: EASE_IN,
+    keyframes: [
+      { opacity: 1, transform: 'translateY(0)' },
+      { opacity: 0, transform: 'translateY(4px)' },
+    ],
+  },
+  enter: {
+    duration: 200,
+    delay: 80,
+    easing: EASE_OUT,
+    keyframes: [
+      { opacity: 0, transform: 'translateY(-6px)' },
       { opacity: 1, transform: 'translateY(0)' },
     ],
   },
@@ -343,4 +431,4 @@ export const meta: SlideMeta = {
   createdAt: '2026-05-20T06:12:31.353Z',
 };
 
-export default [Cover, OneCurve, ShortDurations, Pause, SmallMagnitudes, Closing] satisfies Page[];
+export default [Cover, Family, ShortDurations, Pause, SmallMagnitudes, Closing] satisfies Page[];
