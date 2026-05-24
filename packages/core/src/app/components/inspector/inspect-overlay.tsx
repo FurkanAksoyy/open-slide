@@ -35,6 +35,9 @@ export function InspectOverlay() {
     };
 
     const onMove = (e: PointerEvent) => {
+      if (e.target instanceof Element && e.target.closest('[data-inspector-ui]')) {
+        return setHover(null);
+      }
       const el = pickInspectorTarget(pickElement(e.clientX, e.clientY));
       if (!el) return setHover(null);
       const hit = findSlideSource(el, slideId, { hostOnly: true });
@@ -268,7 +271,9 @@ function ImageActionPanel({
               <ImageIcon className="size-3.5" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">{t.inspector.replace}</TooltipContent>
+          <TooltipContent side="bottom" data-inspector-ui>
+            {t.inspector.replace}
+          </TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -284,7 +289,9 @@ function ImageActionPanel({
               <Crop className="size-3.5" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">{t.inspector.crop}</TooltipContent>
+          <TooltipContent side="bottom" data-inspector-ui>
+            {t.inspector.crop}
+          </TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>
