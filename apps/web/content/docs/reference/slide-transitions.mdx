@@ -227,19 +227,3 @@ const breath: SlideTransition = {
 All six share the same DNA — they only differ in which property carries the
 small nudge. The reader perceives variety; the eye still reads one consistent
 hand.
-
-## Anti-patterns
-
-- ❌ Six different transitions across six pages — the loudest "made in
-  PowerPoint" tell.
-- ❌ `translateX(100%)` slide-from-side — reads as iOS modal or PowerPoint
-  Push, not a slide change.
-- ❌ Aggressive scale-pop (e.g. `0.85 → 1`) + blur — lightbox / photo-viewer
-  vocabulary; implies zooming *into* something.
-- ❌ `clip-path: inset(…)` reveals — After Effects vocabulary; theatrical.
-- ❌ Parallel blur on both layers at once — visual mush; the eye can't fixate.
-- ❌ Duration > 350 ms for a standard slide change — drags.
-- ❌ Translate > 12 px or scale > 3% — reads as rupture, not continuity.
-- ❌ `linear` easing — feels like a slideshow, not a product.
-- ❌ Declaring a transition on every deck. If you don't have a clear reason,
-  omit it. Snap-swap is fine.
