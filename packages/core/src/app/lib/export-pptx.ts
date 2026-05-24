@@ -274,23 +274,52 @@ function emitText(
   // which positions correctly regardless of flex/grid centering on the element.
   const range = document.createRange();
   range.selectNodeContents(el);
-  let rect = range.getBoundingClientRect();
-  if (rect.width < 1 || rect.height < 1) rect = el.getBoundingClientRect();
+  const bbox = range.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  const rect = bbox.width >= 1 && bbox.height >= 1 ? bbox : elRect;
 
-  const lineHeightPx = parseFloat(style.lineHeight);
+  const fontSizePx = parseFloat(style.fontSize) || 16;
+  let lineHeightPx = parseFloat(style.lineHeight);
+  if (!Number.isFinite(lineHeightPx)) lineHeightPx = fontSizePx * 1.2;
   const align = mapTextAlign(style.textAlign);
+
+  // PowerPoint's font metrics run slightly wider than the browser's, so a box
+  // sized to the exact text width re-wraps a word onto a new line. For text
+  // the browser kept on one line, disable wrapping entirely. For genuinely
+  // wrapped text, size the box to the element's content width so PowerPoint
+  // breaks at the same place the browser did.
+  const singleLine = rect.height <= lineHeightPx * 1.4;
+  const isInline = style.display.startsWith('inline') && style.display !== 'inline-block';
+
+  let x: number;
+  let w: number;
+  let wrap: boolean;
+  if (singleLine || isInline) {
+    x = inches(rect.left - origin.left);
+    w = inches(rect.width) + 0.12;
+    wrap = !singleLine;
+  } else {
+    const padL = parseFloat(style.paddingLeft) || 0;
+    const padR = parseFloat(style.paddingRight) || 0;
+    const borderL = parseFloat(style.borderLeftWidth) || 0;
+    const contentLeft = elRect.left + borderL + padL;
+    const contentWidth = el.clientWidth - padL - padR;
+    x = inches(contentLeft - origin.left);
+    w = inches(contentWidth > 1 ? contentWidth : rect.width) + 0.04;
+    wrap = true;
+  }
 
   ops.push(() => {
     slide.addText(runs, {
-      x: inches(rect.left - origin.left),
+      x,
       y: inches(rect.top - origin.top),
-      w: inches(rect.width) + 0.02,
-      h: inches(rect.height) + 0.02,
+      w,
+      h: inches(rect.height) + 0.08,
       align,
       valign: 'top',
       margin: 0,
-      lineSpacing: Number.isFinite(lineHeightPx) ? points(lineHeightPx) : undefined,
-      wrap: true,
+      lineSpacing: points(lineHeightPx),
+      wrap,
       autoFit: false,
     });
   });
