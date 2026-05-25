@@ -27,8 +27,8 @@ export function Hero() {
             className="max-w-[600px] text-[18px] sm:text-[20px] leading-[1.6] text-[color:var(--color-text-soft)] rise"
             style={{ animationDelay: '200ms' }}
           >
-            A React-first slide framework. Every page is arbitrary code on a 1920×1080 canvas —
-            versioned, reviewable, yours.
+            A React-first slide framework. Every page is arbitrary code on a 1920×1080 canvas. No
+            layout to fight. Design anything you can imagine.
           </p>
 
           <div

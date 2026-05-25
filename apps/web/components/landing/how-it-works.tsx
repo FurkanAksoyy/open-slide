@@ -16,8 +16,8 @@ const steps: Step[] = [
   {
     num: '01',
     kicker: 'scaffold',
-    title: 'Init a deck',
-    body: 'One command spins up slides/, open-slide.config.ts, and a hot-reloading dev server. No templates, no themes, no assumptions.',
+    title: 'Spin up a workspace',
+    body: 'Creates the slide workspace. Every future deck you author lives inside it.',
     code: {
       prompt: '$',
       line: 'npx @open-slide/cli init my-deck',
@@ -28,7 +28,7 @@ const steps: Step[] = [
     num: '02',
     kicker: 'author',
     title: 'Ask your agent',
-    body: 'Your agent drafts pages as arbitrary React components. You guide with prompts; it writes files on disk.',
+    body: 'Your agent drafts pages as arbitrary React components. You guide with prompts.',
     code: {
       prompt: '›',
       line: '/create-slide for Q2 roadmap',
@@ -39,7 +39,7 @@ const steps: Step[] = [
     num: '03',
     kicker: 'iterate',
     title: 'Edit, comment, apply',
-    body: 'Toggle inspect: click an element to tweak it visually, drop images into the assets pane, or leave a @slide-comment. Save batches your edits; /apply-comments lets the agent rewrite the rest.',
+    body: 'Click any element to tweak it visually. Or leave a comment for the agent to apply.',
     code: {
       prompt: '›',
       line: '/apply-comment',
@@ -106,7 +106,7 @@ export function HowItWorks() {
           {steps.map((s) => (
             <li
               key={s.num}
-              className="group relative p-8 sm:p-10 lg:p-12 bg-[color:var(--color-ink)] flex flex-col gap-10 sm:min-h-[440px] transition-colors hover:bg-[color:var(--color-panel)]"
+              className="group relative p-8 sm:p-10 lg:p-12 bg-[color:var(--color-ink)] flex flex-col gap-7 transition-colors hover:bg-[color:var(--color-panel)]"
             >
               <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[0.18em] uppercase text-[color:var(--color-muted)]">
                 {s.num} · {s.kicker}
@@ -121,7 +121,7 @@ export function HowItWorks() {
                 </p>
               </div>
 
-              <div className="mt-auto rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
+              <div className="rounded-[6px] border border-[color:var(--color-rule)] bg-[color:var(--color-panel-hi)] p-4 font-[family-name:var(--font-mono)] text-[13px]">
                 <div className="flex items-center gap-2">
                   <span className="text-[color:var(--color-accent)]">{s.code.prompt}</span>
                   <span className="text-[color:var(--color-text)] truncate">
