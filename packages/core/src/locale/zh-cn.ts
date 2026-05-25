@@ -86,6 +86,7 @@ export const zhCN: Locale = {
     toastSlideMoveFailed: '移动幻灯片失败',
     toastFolderDeleted: '已删除文件夹"{name}"',
     toastFolderDeleteFailed: '删除文件夹失败',
+    toastFolderReorderFailed: '文件夹排序失败',
     pickIcon: '选择图标',
   },
 

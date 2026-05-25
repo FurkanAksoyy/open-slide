@@ -90,6 +90,7 @@ export type Locale = {
     /** template: "Deleted folder “{name}”" */
     toastFolderDeleted: string;
     toastFolderDeleteFailed: string;
+    toastFolderReorderFailed: string;
     pickIcon: string;
   };
 

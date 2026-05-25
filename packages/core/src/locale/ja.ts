@@ -86,6 +86,7 @@ export const ja: Locale = {
     toastSlideMoveFailed: 'スライドの移動に失敗しました',
     toastFolderDeleted: 'フォルダ「{name}」を削除しました',
     toastFolderDeleteFailed: 'フォルダの削除に失敗しました',
+    toastFolderReorderFailed: 'フォルダの並び替えに失敗しました',
     pickIcon: 'アイコンを選択',
   },
 

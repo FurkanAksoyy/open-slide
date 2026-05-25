@@ -86,6 +86,7 @@ export const zhTW: Locale = {
     toastSlideMoveFailed: '移動投影片失敗',
     toastFolderDeleted: '已刪除資料夾「{name}」',
     toastFolderDeleteFailed: '刪除資料夾失敗',
+    toastFolderReorderFailed: '資料夾排序失敗',
     pickIcon: '選擇圖示',
   },
 
