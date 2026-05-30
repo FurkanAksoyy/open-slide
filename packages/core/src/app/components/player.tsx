@@ -25,6 +25,14 @@ import { SlideTransitionLayer } from './slide-transition-layer';
 
 const IDLE_HIDE_MS = 2000;
 const BAR_HOTZONE_PX = 160;
+// Click-to-navigate fires only in the outer 30% on each side; the middle 40%
+// is inert so centered content can be clicked without changing pages.
+const EDGE_NAV_RATIO = 0.3;
+// Clicks that land on (or inside) these never navigate — interactive slide
+// content keeps its click, and present chrome is excluded via data-osd-chrome.
+// Authors can opt any element out with a data-osd-interactive attribute.
+const NAV_PASSTHROUGH =
+  'a, button, input, textarea, select, label, summary, iframe, video, audio, embed, object, [role="button"], [role="link"], [contenteditable="true"], [data-osd-interactive], [data-osd-chrome]';
 
 type Props = {
   pages: Page[];
@@ -91,6 +99,21 @@ export function Player({
   }, [index, pages.length, onIndexChange]);
 
   const overlayActive = controls && (overviewOpen || helpOpen);
+
+  const handleStageClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.button !== 0 || overlayActive) return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest(NAV_PASSTHROUGH)) return;
+      if (window.getSelection()?.toString()) return;
+      const rect = rootRef.current?.getBoundingClientRect();
+      if (!rect || rect.width === 0) return;
+      const x = (e.clientX - rect.left) / rect.width;
+      if (x < EDGE_NAV_RATIO) goPrev();
+      else if (x > 1 - EDGE_NAV_RATIO) goNext();
+    },
+    [overlayActive, goPrev, goNext],
+  );
 
   useWheelPageNavigation({
     ref: rootRef,
@@ -290,8 +313,11 @@ export function Player({
     controls && (laser || keyboardDriven || (idle && !overlayActive && !pointerNearBottom));
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: click-to-navigate is a pointer convenience; navigation has full keyboard parity via the global keydown handler and the control bar's prev/next buttons.
+    // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard navigation lives on the window keydown listener (arrows / space / PageUp-Down), not this element.
     <div
       ref={setRoot}
+      onClick={handleStageClick}
       className={cn(
         'fixed inset-0 flex items-center justify-center overflow-hidden bg-black',
         controls && 'select-none',
@@ -308,23 +334,8 @@ export function Player({
         />
       </SlideCanvas>
 
-      <button
-        type="button"
-        aria-label="Previous page"
-        onClick={goPrev}
-        disabled={!canPrev}
-        className={cn('absolute inset-y-0 left-0 z-10 w-[30%]', hideCursor && 'cursor-none')}
-      />
-      <button
-        type="button"
-        aria-label="Next page"
-        onClick={goNext}
-        disabled={!canNext}
-        className={cn('absolute inset-y-0 right-0 z-10 w-[30%]', hideCursor && 'cursor-none')}
-      />
-
       {controls && (
-        <>
+        <div data-osd-chrome style={{ display: 'contents' }}>
           <PresentProgressBar index={index} total={pages.length} visible={chromeVisible} />
           <PresentBlackoutOverlay mode={blackout} />
           <PresentJumpInput pageCount={pages.length} onJump={onIndexChange} />
@@ -358,7 +369,7 @@ export function Player({
             onSelect={onIndexChange}
           />
           <PresentHelpOverlay open={helpOpen} onOpenChange={setHelpOpen} container={rootEl} />
-        </>
+        </div>
       )}
     </div>
   );
