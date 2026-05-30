@@ -71,26 +71,24 @@ async function linkOrCopy(relSrc: string, dst: string): Promise<void> {
   await symlink(relSrc, dst);
 }
 
-async function materializeTemplateLinks(target: string): Promise<void> {
+async function materializeClaudeMdLink(target: string): Promise<void> {
   const claudeMd = join(target, 'CLAUDE.md');
   if (!existsSync(claudeMd) && existsSync(join(target, 'AGENTS.md'))) {
     await linkOrCopy('AGENTS.md', claudeMd);
   }
+}
 
-  const agentsSkills = join(target, '.agents', 'skills');
-  if (!existsSync(agentsSkills)) return;
-
-  const claudeSkills = join(target, '.claude', 'skills');
-  await mkdir(claudeSkills, { recursive: true });
-
-  const entries = await readdir(agentsSkills, { withFileTypes: true });
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    await linkOrCopy(
-      join('..', '..', '.agents', 'skills', entry.name),
-      join(claudeSkills, entry.name),
+async function syncSkills(target: string): Promise<boolean> {
+  const bin = join(target, 'node_modules', '.bin', IS_WINDOWS ? 'open-slide.cmd' : 'open-slide');
+  if (!existsSync(bin)) return false;
+  await new Promise<void>((res, rej) => {
+    const child = spawn(bin, ['sync:skills'], { cwd: target, stdio: 'inherit', shell: IS_WINDOWS });
+    child.on('error', rej);
+    child.on('close', (code) =>
+      code === 0 ? res() : rej(new Error(`open-slide sync:skills exited with code ${code}`)),
     );
-  }
+  });
+  return true;
 }
 
 function renderConfigFile(locale: LocaleCode): string {
@@ -145,7 +143,7 @@ export async function init(opts: InitOptions): Promise<void> {
   }
 
   await cp(TEMPLATE_DIR, target, { recursive: true });
-  await materializeTemplateLinks(target);
+  await materializeClaudeMdLink(target);
 
   const pkgPath = join(target, 'package.json');
   if (existsSync(pkgPath)) {
@@ -174,6 +172,7 @@ export async function init(opts: InitOptions): Promise<void> {
   );
 
   let installed = false;
+  let skillsSynced = false;
   if (install) {
     process.stdout.write(`\n${chalk.bold(`Installing dependencies with ${packageManager}…`)}\n\n`);
     try {
@@ -184,6 +183,19 @@ export async function init(opts: InitOptions): Promise<void> {
       process.stdout.write(
         `\n${chalk.yellow('! Dependency install failed:')} ${chalk.dim(msg)}\n` +
           chalk.dim(`  You can retry manually with \`${packageManager} install\`.\n`),
+      );
+    }
+  }
+
+  if (installed) {
+    process.stdout.write(`\n${chalk.bold('Setting up Claude Code skills…')}\n`);
+    try {
+      skillsSynced = await syncSkills(target);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stdout.write(
+        `${chalk.yellow('! Skill setup failed:')} ${chalk.dim(msg)}\n` +
+          chalk.dim('  open-slide dev will offer to set them up on first run.\n'),
       );
     }
   }
@@ -219,4 +231,7 @@ export async function init(opts: InitOptions): Promise<void> {
   }
   const devCommand = packageManager === 'npm' ? 'npm run dev' : `${packageManager} dev`;
   process.stdout.write(`  ${chalk.cyan(devCommand)}\n`);
+  if (!skillsSynced) {
+    process.stdout.write(chalk.dim('\nSkills will be set up the first time you run dev.\n'));
+  }
 }
