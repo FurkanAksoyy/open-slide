@@ -356,11 +356,6 @@ export const ja: Locale = {
     system: 'システム',
   },
 
-  clickNav: {
-    prevAria: '前のページ',
-    nextAria: '次のページ',
-  },
-
   imagePlaceholder: {
     dropOverlay: 'ここにドロップして使用',
     uploading: 'アップロード中…',

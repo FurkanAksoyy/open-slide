@@ -375,11 +375,6 @@ export type Locale = {
     system: string;
   };
 
-  clickNav: {
-    prevAria: string;
-    nextAria: string;
-  };
-
   imagePlaceholder: {
     dropOverlay: string;
     uploading: string;

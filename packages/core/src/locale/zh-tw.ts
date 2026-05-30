@@ -351,11 +351,6 @@ export const zhTW: Locale = {
     system: '系統',
   },
 
-  clickNav: {
-    prevAria: '上一頁',
-    nextAria: '下一頁',
-  },
-
   imagePlaceholder: {
     dropOverlay: '拖入圖片以使用',
     uploading: '上傳中…',

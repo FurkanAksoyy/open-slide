@@ -40,10 +40,11 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFolders } from '@/lib/folders';
 import { useAgentSocketConnected } from '@/lib/use-agent-socket';
+import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
+import { useIsMobile } from '@/lib/use-is-mobile';
 import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
-import { ClickNavZones } from '../components/click-nav-zones';
 import { NotesDrawer } from '../components/notes-drawer';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
@@ -581,7 +582,7 @@ export function Slide() {
                     data-slide-id={slideId}
                     className="paper relative min-h-0 min-w-0 flex-1 bg-canvas p-2 md:p-10"
                   >
-                    <SlideWheelNavigation
+                    <SlideViewportNavigation
                       targetRef={slideViewportRef}
                       onPrev={() => goTo(index - 1)}
                       onNext={() => goTo(index + 1)}
@@ -597,12 +598,6 @@ export function Slide() {
                         disabled={prefersReducedMotion}
                       />
                     </SlideCanvas>
-                    <ClickNavZones
-                      onPrev={() => goTo(index - 1)}
-                      onNext={() => goTo(index + 1)}
-                      canPrev={index > 0}
-                      canNext={index < pageCount - 1}
-                    />
                     <InspectOverlay />
                     <SaveBar />
                     {import.meta.env.DEV && <CommentWidget />}
@@ -814,7 +809,7 @@ function SelectionReporter() {
   return null;
 }
 
-function SlideWheelNavigation({
+function SlideViewportNavigation({
   targetRef,
   onPrev,
   onNext,
@@ -828,10 +823,24 @@ function SlideWheelNavigation({
   canNext: boolean;
 }) {
   const { active } = useInspector();
+  const isMobile = useIsMobile();
 
   useWheelPageNavigation({
     ref: targetRef,
     enabled: !active,
+    canPrev,
+    canNext,
+    onPrev,
+    onNext,
+  });
+
+  // Tap-to-navigate is a touch affordance — desktop has visible prev/next
+  // chrome, so it stays edge-only on small screens (matches the old md:hidden
+  // zones). Interactive slide content keeps its tap via the hook's passthrough.
+  useClickPageNavigation({
+    ref: targetRef,
+    enabled: isMobile && !active,
+    edgeRatio: 0.18,
     canPrev,
     canNext,
     onPrev,

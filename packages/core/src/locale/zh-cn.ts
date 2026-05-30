@@ -351,11 +351,6 @@ export const zhCN: Locale = {
     system: '系统',
   },
 
-  clickNav: {
-    prevAria: '上一页',
-    nextAria: '下一页',
-  },
-
   imagePlaceholder: {
     dropOverlay: '拖入图片以使用',
     uploading: '上传中…',

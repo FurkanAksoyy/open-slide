@@ -352,11 +352,6 @@ export const en: Locale = {
     system: 'System',
   },
 
-  clickNav: {
-    prevAria: 'Previous page',
-    nextAria: 'Next page',
-  },
-
   imagePlaceholder: {
     dropOverlay: 'Drop image to use here',
     uploading: 'Uploading…',
