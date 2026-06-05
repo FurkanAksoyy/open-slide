@@ -1,8 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
+import type { SlideMode } from '../config.ts';
 
 export const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
+
+/** The synthetic id of the single deck in standalone mode (URL: `/s/index`). */
+export const STANDALONE_SLIDE_ID = 'index';
 
 type MetaTitleRead =
   | { kind: 'found'; title: string }
@@ -178,8 +182,17 @@ export async function duplicateSlideDir(
   }
 }
 
-export function resolveSlideEntry(slidesRoot: string, slideId: string): string | null {
+export function resolveSlideEntry(
+  slidesRoot: string,
+  slideId: string,
+  mode: SlideMode = 'workspace',
+): string | null {
   if (!SLIDE_ID_RE.test(slideId)) return null;
+  // Standalone decks live at the project root (slidesRoot === userCwd here), so
+  // the synthetic slide maps straight to `index.tsx` instead of `<id>/index.tsx`.
+  if (mode === 'standalone') {
+    return slideId === STANDALONE_SLIDE_ID ? path.join(slidesRoot, 'index.tsx') : null;
+  }
   const dir = path.resolve(slidesRoot, slideId);
   if (!dir.startsWith(slidesRoot + path.sep)) return null;
   // The SlideMeta contract says every slide has slides/<id>/index.tsx; we only

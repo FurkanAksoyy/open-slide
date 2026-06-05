@@ -13,7 +13,9 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {config.build.showSlideBrowser ? (
+        {config.mode === 'standalone' ? (
+          <Route path="/" element={<Slide />} />
+        ) : config.build.showSlideBrowser ? (
           <Route element={<HomeShell />}>
             <Route path="/" element={<Home />} />
             <Route path="/themes" element={<ThemesGalleryPage />} />

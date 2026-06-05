@@ -49,7 +49,7 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
           order.push(v as number);
         }
 
-        const entry = resolveSlideEntry(ctx.slidesRoot, slideId);
+        const entry = resolveSlideEntry(ctx.slidesRoot, slideId, ctx.mode);
         if (!entry) return json(res, 400, { error: 'invalid slideId' });
 
         let source: string;
@@ -94,7 +94,7 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
           return json(res, requestCheck.status, { error: requestCheck.error });
         }
 
-        const entry = resolveSlideEntry(ctx.slidesRoot, slideId);
+        const entry = resolveSlideEntry(ctx.slidesRoot, slideId, ctx.mode);
         if (!entry) return json(res, 400, { error: 'invalid slideId' });
 
         let source: string;
@@ -120,8 +120,10 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
         return json(res, 200, { ok: true, slideId, index: pageIndex });
       }
 
+      // Duplicating or deleting the whole deck is a workspace concept; a
+      // standalone project has exactly one slide and no folders manifest.
       const duplicateMatch = url.pathname.match(/^\/([^/]+)\/duplicate$/);
-      if (duplicateMatch && method === 'POST') {
+      if (duplicateMatch && method === 'POST' && ctx.mode !== 'standalone') {
         const requestCheck = validateMutationRequest(req);
         if (!requestCheck.ok) {
           return json(res, requestCheck.status, { error: requestCheck.error });
@@ -160,7 +162,7 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
         const name = validateSlideName(body.name);
         if (!name) return json(res, 400, { error: 'invalid name' });
 
-        const entry = resolveSlideEntry(ctx.slidesRoot, slideId);
+        const entry = resolveSlideEntry(ctx.slidesRoot, slideId, ctx.mode);
         if (!entry) return json(res, 400, { error: 'invalid slideId' });
 
         let source: string;
@@ -186,7 +188,7 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
         return json(res, 200, { ok: true, slideId, name });
       }
 
-      if (method === 'DELETE') {
+      if (method === 'DELETE' && ctx.mode !== 'standalone') {
         const requestCheck = validateMutationRequest(req);
         if (!requestCheck.ok) {
           return json(res, requestCheck.status, { error: requestCheck.error });

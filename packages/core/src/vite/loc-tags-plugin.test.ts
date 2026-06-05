@@ -162,6 +162,31 @@ describe('locTagsPlugin', () => {
   });
 });
 
+describe('locTagsPlugin in standalone mode', () => {
+  function transformStandalone(id: string) {
+    const plugin = locTagsPlugin({ userCwd: '/repo', mode: 'standalone' });
+    const transform = plugin.transform;
+    if (typeof transform !== 'function') throw new Error('expected transform function');
+    return transform.call({} as never, pluginTransformSource, id) as LocTagsTransformResult;
+  }
+
+  it('tags the root index.tsx entry', () => {
+    const out = transformStandalone('/repo/index.tsx');
+    if (out === null) throw new Error('expected tagged transform result');
+    expect(out.code).toContain('data-slide-loc');
+  });
+
+  it('strips the HMR ?t= query before matching the root entry', () => {
+    const out = transformStandalone('/repo/index.tsx?t=1700000000000');
+    if (out === null) throw new Error('expected tagged transform result');
+    expect(out.code).toContain('data-slide-loc');
+  });
+
+  it('skips files that are not the root entry', () => {
+    expect(transformStandalone('/repo/slides/cover/index.tsx')).toBeNull();
+  });
+});
+
 describe('locTagsPlugin on Windows-style paths', () => {
   afterEach(() => {
     vi.restoreAllMocks();
