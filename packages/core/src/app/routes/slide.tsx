@@ -592,7 +592,10 @@ export function Slide() {
                             </span>
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-[240px] leading-relaxed">
+                        <TooltipContent
+                          side="left"
+                          className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
+                        >
                           {t.slide.pptxComingSoonTooltip}
                         </TooltipContent>
                       </Tooltip>
@@ -896,7 +899,11 @@ function AgentConnectedBadge() {
             {connected ? t.slide.agentConnected : t.slide.agentDisconnected}
           </button>
         </TooltipTrigger>
-        <TooltipContent side="bottom" align="start" className="max-w-[280px] leading-relaxed">
+        <TooltipContent
+          side="bottom"
+          align="start"
+          className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
+        >
           {connected ? t.slide.agentConnectedTooltip : t.slide.agentDisconnectedTooltip}
         </TooltipContent>
       </Tooltip>
