@@ -4,6 +4,7 @@ import * as t from '@babel/types';
 import type { Plugin } from 'vite';
 import type { SlideMode } from '../config.ts';
 import { walkJsx } from '../editing/babel-walk.ts';
+import { resolveStandaloneEntry } from '../files/standalone-entry.ts';
 
 // Inject `data-slide-loc="<line>:<col>"` onto every host JSX element in
 // slide source files so the inspector can map a click straight to a
@@ -80,9 +81,11 @@ function isSlideSourceFile(id: string, slidesRootPosix: string): boolean {
 export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
   const isStandalone = (opts.mode ?? 'workspace') === 'standalone';
   const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides').replace(/\\/g, '/');
-  const standaloneEntry = path.resolve(opts.userCwd, 'index.tsx').replace(/\\/g, '/');
   const matches = (id: string): boolean => {
-    if (isStandalone) return id.split(/[?#]/)[0].replace(/\\/g, '/') === standaloneEntry;
+    if (isStandalone) {
+      const standaloneEntry = resolveStandaloneEntry(opts.userCwd).replace(/\\/g, '/');
+      return id.split(/[?#]/)[0].replace(/\\/g, '/') === standaloneEntry;
+    }
     return isSlideSourceFile(id, slidesRoot);
   };
   return {

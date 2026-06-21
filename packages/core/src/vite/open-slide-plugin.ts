@@ -5,6 +5,11 @@ import fg from 'fast-glob';
 import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
 import type { OpenSlideConfig, SlideMode } from '../config.ts';
 import { STANDALONE_SLIDE_ID } from '../editing/slide-ops.ts';
+import {
+  findStandaloneEntry,
+  isStandaloneEntryPath,
+  standaloneEntryCandidates,
+} from '../files/standalone-entry.ts';
 
 export type { OpenSlideConfig };
 
@@ -57,14 +62,6 @@ async function findSlides(userCwd: string, slidesDir: string): Promise<string[]>
     onlyFiles: true,
   });
   return hits.sort();
-}
-
-function findStandaloneEntry(userCwd: string): string[] {
-  for (const ext of ['tsx', 'jsx', 'ts', 'js']) {
-    const abs = path.join(userCwd, `index.${ext}`);
-    if (existsSync(abs)) return [abs];
-  }
-  return [];
 }
 
 function toId(absFile: string, slidesRoot: string): string {
@@ -193,12 +190,11 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
   const slidesDir = config.slidesDir ?? 'slides';
   const slidesRoot = isStandalone ? userCwd : path.resolve(userCwd, slidesDir);
   const foldersManifestPath = path.join(slidesRoot, '.folders.json');
-  const standaloneEntry = path.join(userCwd, 'index.tsx');
 
   let isDev = false;
   const slideIdForEntry = (p: string): string | null => {
     if (isStandalone) {
-      return path.resolve(p) === standaloneEntry ? STANDALONE_SLIDE_ID : null;
+      return isStandaloneEntryPath(userCwd, p) ? STANDALONE_SLIDE_ID : null;
     }
     const rel = path.relative(slidesRoot, p);
     if (rel.startsWith('..') || path.isAbsolute(rel)) return null;
@@ -242,8 +238,11 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     },
     async load(id) {
       if (id === resolved(SLIDES_VMOD)) {
+        const standaloneEntry = findStandaloneEntry(userCwd);
         const files = isStandalone
-          ? findStandaloneEntry(userCwd)
+          ? standaloneEntry === null
+            ? []
+            : [standaloneEntry]
           : await findSlides(userCwd, slidesDir);
         return await generateSlidesModule(files, slidesRoot, isDev, mode);
       }
@@ -301,7 +300,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       // directory itself, since Vite sets `disableGlobbing: true` and would
       // otherwise treat a glob pattern as a literal path. Standalone has no
       // slides dir; watch the root entry so add/unlink still triggers a reload.
-      if (isStandalone) server.watcher.add(standaloneEntry);
+      if (isStandalone) server.watcher.add(standaloneEntryCandidates(userCwd));
       else if (existsSync(slidesRoot)) server.watcher.add(slidesRoot);
       server.watcher.on('add', (p) => {
         if (isSlideEntry(p)) reload();

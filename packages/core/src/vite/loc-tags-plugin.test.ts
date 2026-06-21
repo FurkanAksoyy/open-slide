@@ -1,3 +1,5 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { injectLocTags, locTagsPlugin } from './loc-tags-plugin.ts';
@@ -180,6 +182,26 @@ describe('locTagsPlugin in standalone mode', () => {
     const out = transformStandalone('/repo/index.tsx?t=1700000000000');
     if (out === null) throw new Error('expected tagged transform result');
     expect(out.code).toContain('data-slide-loc');
+  });
+
+  it('tags the resolved root entry when it uses a jsx extension', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'open-slide-loc-tags-'));
+    try {
+      const entry = path.join(dir, 'index.jsx');
+      writeFileSync(entry, pluginTransformSource);
+      const plugin = locTagsPlugin({ userCwd: dir, mode: 'standalone' });
+      const transform = plugin.transform;
+      if (typeof transform !== 'function') throw new Error('expected transform function');
+      const out = transform.call(
+        {} as never,
+        pluginTransformSource,
+        entry,
+      ) as LocTagsTransformResult;
+      if (out === null) throw new Error('expected tagged transform result');
+      expect(out.code).toContain('data-slide-loc');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('skips files that are not the root entry', () => {

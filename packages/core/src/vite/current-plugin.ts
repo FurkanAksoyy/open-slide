@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Plugin, ViteDevServer } from 'vite';
 import type { SlideMode } from '../config.ts';
 import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
+import { standalonePagePath } from '../files/standalone-entry.ts';
 
 const TEXT_SNIPPET_MAX = 120;
 
@@ -110,7 +111,7 @@ export function currentPlugin(opts: CurrentPluginOptions): Plugin {
           const slideTitle = typeof raw.slideTitle === 'string' ? raw.slideTitle : raw.slideId;
           const view = raw.view === 'assets' ? 'assets' : 'slides';
           const pagePath = isStandalone
-            ? 'index.tsx'
+            ? standalonePagePath(userCwd)
             : path.join(slidesDir, raw.slideId, 'index.tsx').split(path.sep).join('/');
 
           if (cached?.slideId !== raw.slideId || cached?.pageIndex !== pageIndex) {

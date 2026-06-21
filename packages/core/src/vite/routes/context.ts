@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Connect } from 'vite';
 import type { SlideMode } from '../../config.ts';
 import { SLIDE_ID_RE, STANDALONE_SLIDE_ID } from '../../editing/slide-ops.ts';
+import { resolveStandaloneEntry } from '../../files/standalone-entry.ts';
 
 export type ApiContext = {
   userCwd: string;
@@ -28,7 +29,7 @@ export function makeContext(opts: ApiPluginOptions): ApiContext {
   const slidesDir = opts.slidesDir ?? 'slides';
   const assetsDir = opts.assetsDir ?? 'assets';
   // Standalone decks have no `slides/` dir; the project root itself holds the
-  // single `index.tsx`, so slide-scoped resolution roots at userCwd.
+  // single slide entry, so slide-scoped resolution roots at userCwd.
   const slidesRoot = mode === 'standalone' ? userCwd : path.resolve(userCwd, slidesDir);
   const globalAssetsRoot = path.resolve(userCwd, assetsDir);
   const manifestPath = path.join(slidesRoot, '.folders.json');
@@ -74,7 +75,7 @@ export function resolveSlidePath(
 ): string | null {
   if (!SLIDE_ID_RE.test(slideId)) return null;
   if (mode === 'standalone') {
-    return slideId === STANDALONE_SLIDE_ID ? path.join(userCwd, 'index.tsx') : null;
+    return slideId === STANDALONE_SLIDE_ID ? resolveStandaloneEntry(userCwd) : null;
   }
   const slidesRoot = path.resolve(userCwd, slidesDir);
   const full = path.resolve(slidesRoot, slideId, 'index.tsx');

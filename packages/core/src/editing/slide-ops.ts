@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parse as babelParse } from '@babel/parser';
 import type { SlideMode } from '../config.ts';
+import { resolveStandaloneEntry } from '../files/standalone-entry.ts';
 
 export const SLIDE_ID_RE = /^[a-z0-9_-]+$/i;
 
@@ -189,9 +190,9 @@ export function resolveSlideEntry(
 ): string | null {
   if (!SLIDE_ID_RE.test(slideId)) return null;
   // Standalone decks live at the project root (slidesRoot === userCwd here), so
-  // the synthetic slide maps straight to `index.tsx` instead of `<id>/index.tsx`.
+  // the synthetic slide maps straight to the root entry instead of `<id>/index.tsx`.
   if (mode === 'standalone') {
-    return slideId === STANDALONE_SLIDE_ID ? path.join(slidesRoot, 'index.tsx') : null;
+    return slideId === STANDALONE_SLIDE_ID ? resolveStandaloneEntry(slidesRoot) : null;
   }
   const dir = path.resolve(slidesRoot, slideId);
   if (!dir.startsWith(slidesRoot + path.sep)) return null;

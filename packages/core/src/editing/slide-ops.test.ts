@@ -52,6 +52,15 @@ describe('resolveSlideEntry', () => {
     );
   });
 
+  it('maps the synthetic id to the resolved root entry in standalone mode', async () => {
+    await withSlidesRoot(async (root) => {
+      await fs.writeFile(path.join(root, 'index.jsx'), '');
+      expect(resolveSlideEntry(root, STANDALONE_SLIDE_ID, 'standalone')).toBe(
+        path.join(root, 'index.jsx'),
+      );
+    });
+  });
+
   it('rejects any other id in standalone mode', () => {
     expect(resolveSlideEntry('/repo', 'cover', 'standalone')).toBeNull();
   });

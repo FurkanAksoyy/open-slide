@@ -14,7 +14,7 @@ library. Edit `index.tsx` and it hot-reloads.
 
 ## Layout
 
-```
+```text
 .
 ├── index.tsx            # your deck — edit this
 ├── assets/              # images / video / fonts, imported via ./assets/...
