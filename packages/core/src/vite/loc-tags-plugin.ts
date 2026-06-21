@@ -81,9 +81,11 @@ function isSlideSourceFile(id: string, slidesRootPosix: string): boolean {
 export function locTagsPlugin(opts: LocTagsPluginOptions): Plugin {
   const isStandalone = (opts.mode ?? 'workspace') === 'standalone';
   const slidesRoot = path.resolve(opts.userCwd, opts.slidesDir ?? 'slides').replace(/\\/g, '/');
+  const standaloneEntry = isStandalone
+    ? resolveStandaloneEntry(opts.userCwd).replace(/\\/g, '/')
+    : null;
   const matches = (id: string): boolean => {
-    if (isStandalone) {
-      const standaloneEntry = resolveStandaloneEntry(opts.userCwd).replace(/\\/g, '/');
+    if (standaloneEntry) {
       return id.split(/[?#]/)[0].replace(/\\/g, '/') === standaloneEntry;
     }
     return isSlideSourceFile(id, slidesRoot);

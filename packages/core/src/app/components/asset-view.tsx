@@ -63,8 +63,9 @@ export function AssetView({ slideId }: Props) {
   const isStandalone = config.mode === 'standalone';
   const lockedToGlobal = slideId === null;
   const singleScope = lockedToGlobal || isStandalone;
-  const [scope, setScope] = useState<Scope>(lockedToGlobal ? 'global' : 'slide');
-  const effectiveSlideId = scope === 'global' || slideId === null ? GLOBAL_SLIDE_ID : slideId;
+  const [scope, setScope] = useState<Scope>(singleScope ? 'global' : 'slide');
+  const effectiveSlideId =
+    singleScope || scope === 'global' || slideId === null ? GLOBAL_SLIDE_ID : slideId;
   const { assets, loading, available, upload, rename, remove } = useAssets(effectiveSlideId);
   const [dragActive, setDragActive] = useState(false);
   const [conflict, setConflict] = useState<ConflictState | null>(null);

@@ -9,7 +9,7 @@
     "preview": "open-slide preview"
   },
   "dependencies": {
-    "@open-slide/core": "^1.12.1",
+    "@open-slide/core": "^0.0.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

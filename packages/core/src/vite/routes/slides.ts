@@ -135,7 +135,10 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
       // Duplicating or deleting the whole deck is a workspace concept; a
       // standalone project has exactly one slide and no folders manifest.
       const duplicateMatch = url.pathname.match(/^\/([^/]+)\/duplicate$/);
-      if (duplicateMatch && method === 'POST' && ctx.mode !== 'standalone') {
+      if (duplicateMatch && method === 'POST') {
+        if (ctx.mode === 'standalone') {
+          return json(res, 400, { error: 'operation not supported in standalone mode' });
+        }
         const requestCheck = validateMutationRequest(req);
         if (!requestCheck.ok) {
           return json(res, requestCheck.status, { error: requestCheck.error });
@@ -200,7 +203,10 @@ export function registerSlideRoutes(server: ViteDevServer, ctx: ApiContext): voi
         return json(res, 200, { ok: true, slideId, name });
       }
 
-      if (method === 'DELETE' && ctx.mode !== 'standalone') {
+      if (method === 'DELETE') {
+        if (ctx.mode === 'standalone') {
+          return json(res, 400, { error: 'operation not supported in standalone mode' });
+        }
         const requestCheck = validateMutationRequest(req);
         if (!requestCheck.ok) {
           return json(res, requestCheck.status, { error: requestCheck.error });
