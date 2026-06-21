@@ -133,9 +133,21 @@ html.light .os-landing {
 }
 .os-landing .marquee-track {
   display: inline-flex;
-  gap: 160px;
+  gap: 56px;
   animation: os-marquee 45s linear infinite;
   white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .os-landing .marquee-track {
+    gap: 96px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .os-landing .marquee-track {
+    gap: 160px;
+  }
 }
 
 @keyframes os-rise {
@@ -227,6 +239,13 @@ html.light .os-landing .logo-light {
 html.light .os-landing .agent-mono {
   filter: brightness(0);
   opacity: 0.7;
+}
+
+.os-landing .vercel-oss-badge {
+  filter: invert(1) brightness(1.08);
+}
+html.light .os-landing .vercel-oss-badge {
+  filter: none;
 }
 
 .os-landing :where(a, button, [role="button"]):focus-visible {

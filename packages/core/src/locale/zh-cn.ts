@@ -45,6 +45,10 @@ export const zhCN: Locale = {
     newFolder: '新建文件夹',
     folderName: '文件夹名称',
     updateAvailable: 'open-slide {version} 已发布，请更新软件包以获取最新版本。',
+    updatePackage: '更新',
+    updatingPackage: '更新中',
+    updatePackageDone: '已更新。请重启 dev server 以使用新版本。',
+    updatePackageFailed: '更新失败，请查看 dev server 输出。',
     changeIcon: '更换图标',
     iconEmojiTab: 'Emoji',
     iconColorTab: '颜色',
@@ -101,6 +105,7 @@ export const zhCN: Locale = {
     backToHome: '返回首页',
     download: '下载',
     copyLink: '复制链接',
+    moreActions: '更多操作',
     toastCopyLinkSuccess: '已复制链接到剪贴板',
     toastCopyLinkFailed: '复制链接失败',
     exportAsHtml: '导出为 HTML',
@@ -343,6 +348,7 @@ export const zhCN: Locale = {
     resizeRail: '调整缩略图栏宽度',
     transitionIndicator: '有换页转场',
     stepsIndicator: '有逐步揭示',
+    overviewAria: '幻灯片总览 (O)',
   },
 
   pdfToast: {

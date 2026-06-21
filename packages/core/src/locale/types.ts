@@ -45,6 +45,10 @@ export type Locale = {
     newFolder: string;
     folderName: string;
     updateAvailable: string;
+    updatePackage: string;
+    updatingPackage: string;
+    updatePackageDone: string;
+    updatePackageFailed: string;
     changeIcon: string;
     iconEmojiTab: string;
     iconColorTab: string;
@@ -104,6 +108,7 @@ export type Locale = {
     agentDisconnectedTooltip: string;
     download: string;
     copyLink: string;
+    moreActions: string;
     toastCopyLinkSuccess: string;
     toastCopyLinkFailed: string;
     exportAsHtml: string;
@@ -366,6 +371,7 @@ export type Locale = {
     resizeRail: string;
     transitionIndicator: string;
     stepsIndicator: string;
+    overviewAria: string;
   };
 
   pdfToast: {

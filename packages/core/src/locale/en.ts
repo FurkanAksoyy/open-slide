@@ -45,6 +45,10 @@ export const en: Locale = {
     newFolder: 'New folder',
     folderName: 'Folder name',
     updateAvailable: 'open-slide {version} is available — update the package to get the latest.',
+    updatePackage: 'Update',
+    updatingPackage: 'Updating',
+    updatePackageDone: 'Updated. Restart the dev server to use the new version.',
+    updatePackageFailed: 'Update failed. Check the dev server output.',
     changeIcon: 'Change icon',
     iconEmojiTab: 'Emoji',
     iconColorTab: 'Color',
@@ -102,6 +106,7 @@ export const en: Locale = {
       'Lost connection to the dev server, so your agent can no longer see the current slide or inspector selection. Restart the dev server to restore the connection.',
     download: 'Download',
     copyLink: 'Copy link',
+    moreActions: 'More actions',
     toastCopyLinkSuccess: 'Link copied to clipboard',
     toastCopyLinkFailed: 'Failed to copy link',
     exportAsHtml: 'Export as HTML',
@@ -345,6 +350,7 @@ export const en: Locale = {
     resizeRail: 'Resize thumbnail rail',
     transitionIndicator: 'Has slide transition',
     stepsIndicator: 'Has step-by-step reveals',
+    overviewAria: 'Slide overview (O)',
   },
 
   pdfToast: {

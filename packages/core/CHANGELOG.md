@@ -1,5 +1,61 @@
 # @open-slide/core
 
+## 1.12.1
+
+### Patch Changes
+
+- [#233](https://github.com/1weiho/open-slide/pull/233) [`0128ba4`](https://github.com/1weiho/open-slide/commit/0128ba43b75a6e9a4760708c20064a8c570db962) Thanks [@1weiho](https://github.com/1weiho)! - Center longer slide UI tooltip messages.
+
+- [#242](https://github.com/1weiho/open-slide/pull/242) [`949bdbf`](https://github.com/1weiho/open-slide/commit/949bdbfd4580eceec0f0710d67561ad6d56754ed) Thanks [@poterpan](https://github.com/poterpan)! - Fix HTML export distorting the slide aspect ratio on narrow viewports.
+
+- [#241](https://github.com/1weiho/open-slide/pull/241) [`3c57091`](https://github.com/1weiho/open-slide/commit/3c5709153e80244545957f8d9ee8039429068eb9) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Fix the slide toolbar on narrow screens: keep the title from overlapping the icons, and collapse the copy-link and download actions into a single overflow menu.
+
+- [#244](https://github.com/1weiho/open-slide/pull/244) [`57e2845`](https://github.com/1weiho/open-slide/commit/57e2845b80b4a1f52bd947524fb4eeb5dea06ef8) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Block pointer input on frozen slide previews so interactive content no longer hijacks thumbnail and overview clicks.
+
+- [#235](https://github.com/1weiho/open-slide/pull/235) [`ef265e8`](https://github.com/1weiho/open-slide/commit/ef265e8bad56355e52bda6d12d1b6e2676f68f4b) Thanks [@1weiho](https://github.com/1weiho)! - Show transition and step indicators in the slide overview grid.
+
+## 1.12.0
+
+### Minor Changes
+
+- [#211](https://github.com/1weiho/open-slide/pull/211) [`12ee858`](https://github.com/1weiho/open-slide/commit/12ee8587458843c8389344336d93fe07bd99a674) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Open the slide overview grid from the pages editor — press O or click the grid button next to the page count. The overlay adopts the editor theme instead of the present-mode black.
+
+### Patch Changes
+
+- [#230](https://github.com/1weiho/open-slide/pull/230) [`75653e1`](https://github.com/1weiho/open-slide/commit/75653e1abed5aed93ec9835fe5eee299ddde24e5) Thanks [@1weiho](https://github.com/1weiho)! - Add a one-click update action that upgrades open-slide and syncs bundled skills from the home sidebar.
+
+- [#219](https://github.com/1weiho/open-slide/pull/219) [`f5a60ad`](https://github.com/1weiho/open-slide/commit/f5a60ade563dd9e80f0ecb02fe696cb8bb70968c) Thanks [@adawang1210](https://github.com/adawang1210)! - Stop force-loading every registered font face before PDF export, which hung or crashed the tab on subsetted CJK webfonts.
+
+- [#216](https://github.com/1weiho/open-slide/pull/216) [`80dda4e`](https://github.com/1weiho/open-slide/commit/80dda4e687242bafd6bf56bfd64a5641e64034d2) Thanks [@poterpan](https://github.com/poterpan)! - Add webfont guidance to the slide-authoring skill: load the stylesheet once in `<head>`, list only the weights used, and subset CJK with `&text=`.
+
+## 1.11.1
+
+### Patch Changes
+
+- [#218](https://github.com/1weiho/open-slide/pull/218) [`ba26721`](https://github.com/1weiho/open-slide/commit/ba267217e4c66e5040123fc27847bc8a82ef82e1) Thanks [@adawang1210](https://github.com/adawang1210)! - Keep the notes textarea focused when Escape is pressed during IME composition.
+
+- [#220](https://github.com/1weiho/open-slide/pull/220) [`336bade`](https://github.com/1weiho/open-slide/commit/336badec7d2384457830c0db0a6c7242a2ea349f) Thanks [@adawang1210](https://github.com/adawang1210)! - Ignore Enter/Escape during IME composition in slide title, slide rename, asset rename, and folder name inputs.
+
+- [#217](https://github.com/1weiho/open-slide/pull/217) [`b8916e3`](https://github.com/1weiho/open-slide/commit/b8916e37a0071ed53bc6d5ef8c5c826f76da6c4c) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Fix PPTX export producing a theme that triggers PowerPoint's repair prompt by ensuring the fill style list has the schema-required three entries.
+
+- [#221](https://github.com/1weiho/open-slide/pull/221) [`9052f44`](https://github.com/1weiho/open-slide/commit/9052f4416f9835b0831dfe7aed546b3a74647d7a) Thanks [@adawang1210](https://github.com/adawang1210)! - Remove the touchcancel listener on cleanup in the present-mode swipe handler so listeners no longer accumulate while navigating.
+
+## 1.11.0
+
+### Minor Changes
+
+- [#207](https://github.com/1weiho/open-slide/pull/207) [`cb5ebf4`](https://github.com/1weiho/open-slide/commit/cb5ebf4208149417f072a29764431f091f123efa) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Add `base` to `OpenSlideConfig` for hosting under a subpath (e.g. GitHub Pages, Nginx subdirectory). Wires through to Vite's `base` and React Router's `basename`.
+
+- [#203](https://github.com/1weiho/open-slide/pull/203) [`5561b41`](https://github.com/1weiho/open-slide/commit/5561b410f732291c4fedeed63b76eff5ca24d6ef) Thanks [@1weiho](https://github.com/1weiho)! - Add slide-view shortcuts: Space advances, Enter plays in window, P opens presenter mode (F stays fullscreen).
+
+### Patch Changes
+
+- [#209](https://github.com/1weiho/open-slide/pull/209) [`b45389c`](https://github.com/1weiho/open-slide/commit/b45389c62e112adc3a4b5d31a796da1858058e58) Thanks [@1weiho](https://github.com/1weiho)! - Fix homepage thumbnails flashing at full size before scaling down by measuring the fit scale before first paint.
+
+- [#208](https://github.com/1weiho/open-slide/pull/208) [`2cbc7b4`](https://github.com/1weiho/open-slide/commit/2cbc7b408bfa918aa01f1db57162740a5cc91a69) Thanks [@ridemountainpig](https://github.com/ridemountainpig)! - Presenter window now reflects in-slide `<Steps>` state: Now Showing mirrors the projection's revealed count, and Up Next previews the next step until the current slide's steps are exhausted before rolling over to the next slide.
+
+- [#197](https://github.com/1weiho/open-slide/pull/197) [`27230b3`](https://github.com/1weiho/open-slide/commit/27230b3213d53a6606d9c7d4d83d2c531f9aba44) Thanks [@mvanhorn](https://github.com/mvanhorn)! - Preserve raster backgrounds in PDF exports while stripping gradient layers.
+
 ## 1.10.0
 
 ### Minor Changes

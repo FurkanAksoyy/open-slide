@@ -27,7 +27,7 @@ export function apiPlugin(opts: ApiPluginOptions): Plugin {
       registerAssetRoutes(server, ctx);
       registerSvglRoutes(server);
       registerFolderRoutes(server, ctx);
-      registerUpdateRoutes(server, ctx.coreVersion);
+      registerUpdateRoutes(server, ctx);
     },
   };
 }

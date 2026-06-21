@@ -255,6 +255,7 @@ export function Sidebar({
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return;
                   if (e.key === 'Enter') commitCreate();
                   if (e.key === 'Escape') exitCreate();
                 }}

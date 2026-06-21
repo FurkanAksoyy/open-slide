@@ -11,6 +11,7 @@ import {
   Loader2,
   Maximize,
   MonitorSpeaker,
+  MoreHorizontal,
   Play,
   Presentation,
 } from 'lucide-react';
@@ -51,6 +52,7 @@ import { format, useLocale } from '@/lib/use-locale';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import { NotesDrawer } from '../components/notes-drawer';
+import { OverviewGrid } from '../components/overview-grid';
 import { PdfProgressToast } from '../components/pdf-progress-toast';
 import { openPresenterWindow, Player } from '../components/player';
 import { PptxProgressToast } from '../components/pptx-progress-toast';
@@ -77,6 +79,7 @@ export function Slide() {
   const [linkCopied, setLinkCopied] = useState(false);
   const linkCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [designOpen, setDesignOpen] = useState(false);
+  const [overviewOpen, setOverviewOpen] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -240,6 +243,18 @@ export function Slide() {
     if (playMode) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLElement && e.target.matches('input, textarea')) return;
+      // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      // Toggle overview from either state — the overview's own capture-phase
+      // handler doesn't consume O, so this stays consistent open ↔ closed.
+      if (e.key === 'o' || e.key === 'O') {
+        e.preventDefault();
+        setOverviewOpen((v) => !v);
+        return;
+      }
+      // Once overview owns focus, swallow everything else here — its
+      // capture-phase listener drives the focused thumbnail.
+      if (overviewOpen) return;
       if (
         e.key === 'ArrowRight' ||
         e.key === 'ArrowDown' ||
@@ -255,8 +270,6 @@ export function Slide() {
         goTo(index - 1);
         return;
       }
-      // Letter shortcuts only fire bare so browser combos (Cmd/Ctrl-P, ⌘F…) stay intact.
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
       if (e.key === 'f' || e.key === 'F') {
         setPlayMode('fullscreen');
       } else if (e.key === 'Enter') {
@@ -270,7 +283,7 @@ export function Slide() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [index, goTo, playMode, slideId]);
+  }, [index, goTo, playMode, slideId, overviewOpen]);
 
   if (error) {
     return (
@@ -367,6 +380,127 @@ export function Slide() {
 
   const title = slide.meta?.title ?? slideId;
 
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success(t.slide.toastCopyLinkSuccess);
+      setLinkCopied(true);
+      if (linkCopiedTimerRef.current) clearTimeout(linkCopiedTimerRef.current);
+      linkCopiedTimerRef.current = setTimeout(() => setLinkCopied(false), 1200);
+    } catch (err) {
+      console.error('[open-slide] copy link failed', err);
+      toast.error(t.slide.toastCopyLinkFailed);
+    }
+  };
+
+  const exportHtml = async () => {
+    if (!slide || exporting) return;
+    setExporting(true);
+    try {
+      await exportSlideAsHtml(slide, slideId);
+    } catch (err) {
+      console.error('[open-slide] export failed', err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportPdf = async () => {
+    if (!slide || exporting) return;
+    if (isSafari()) {
+      toast.error(t.slide.pdfExportSafariUnsupported, { duration: 5000 });
+      return;
+    }
+    setExporting(true);
+    const toastId = `pdf-export-${slideId}`;
+    toast.custom(
+      () => (
+        <PdfProgressToast
+          progress={{ phase: 'processing', current: 0, total: pages.length, percent: 0 }}
+        />
+      ),
+      { id: toastId, duration: Infinity },
+    );
+    try {
+      await exportSlideAsPdf(slide, slideId, (p) => {
+        toast.custom(() => <PdfProgressToast progress={p} />, { id: toastId, duration: Infinity });
+      });
+    } catch (err) {
+      console.error('[open-slide] pdf export failed', err);
+      toast.error(t.slide.pdfExportFailed, { id: toastId, duration: 4000 });
+    } finally {
+      setExporting(false);
+      toast.dismiss(toastId);
+    }
+  };
+
+  const exportImagePptx = async () => {
+    if (!slide || exporting) return;
+    setExporting(true);
+    const toastId = `pptx-export-${slideId}`;
+    toast.custom(
+      () => (
+        <PptxProgressToast
+          progress={{ phase: 'processing', current: 0, total: pages.length, percent: 0 }}
+        />
+      ),
+      { id: toastId, duration: Infinity },
+    );
+    try {
+      await exportSlideAsImagePptx(slide, slideId, (p) => {
+        toast.custom(() => <PptxProgressToast progress={p} />, { id: toastId, duration: Infinity });
+      });
+    } catch (err) {
+      console.error('[open-slide] image pptx export failed', err);
+      toast.error(t.slide.imagePptxExportFailed, { id: toastId, duration: 4000 });
+    } finally {
+      setExporting(false);
+      toast.dismiss(toastId);
+    }
+  };
+
+  const exportMenuItems = (
+    <>
+      <DropdownMenuItem disabled={exporting} onSelect={exportHtml}>
+        <FileCode2 />
+        {t.slide.exportAsHtml}
+      </DropdownMenuItem>
+      <DropdownMenuItem disabled={exporting} onSelect={exportPdf}>
+        <FileText />
+        {t.slide.exportAsPdf}
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem disabled={exporting} onSelect={exportImagePptx}>
+        <FileImage />
+        {t.slide.exportAsImagePptx}
+      </DropdownMenuItem>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              aria-disabled
+              className="relative flex cursor-help items-center justify-between gap-2 rounded-[5px] px-2 py-1.5 text-[12.5px] opacity-45 select-none [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:opacity-80"
+            >
+              <span className="flex items-center gap-2">
+                <Presentation />
+                {t.slide.exportAsPptx}
+              </span>
+              <span className="rounded-[3px] bg-muted px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.04em] text-muted-foreground">
+                {t.slide.comingSoon}
+              </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent
+            side="left"
+            className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
+          >
+            {t.slide.pptxComingSoonTooltip}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </>
+  );
+
   return (
     <HistoryProvider>
       <InspectorProvider slideId={slideId} pageIndex={index}>
@@ -374,7 +508,7 @@ export function Slide() {
         <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
           {/* Editorial toolbar — three zones, hairline separators, mono-folio center */}
           <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-sidebar/85 px-2 backdrop-blur-md md:px-3">
-            <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
+            <div className="flex flex-1 items-center gap-1.5 md:flex-none md:gap-2">
               {showSlideBrowser && (
                 <Button asChild variant="ghost" size="icon-sm" title={t.slide.home}>
                   <Link to="/" aria-label={t.slide.backToHome}>
@@ -407,14 +541,16 @@ export function Slide() {
               {import.meta.env.DEV && <AgentConnectedBadge />}
             </div>
 
-            {/* Title centered to the viewport, not the leftover space between the side groups. */}
-            <div className="pointer-events-none absolute inset-x-0 flex justify-center px-2">
+            {/* On md+ the title centers to the viewport via absolute positioning. On mobile the
+                two side groups each flex-1, so the in-flow title lands at the viewport center too —
+                and min-w-0 lets it truncate instead of overlapping the icons on narrow widths. */}
+            <div className="pointer-events-none relative flex min-w-0 justify-center px-2 md:absolute md:inset-x-0">
               <div className="pointer-events-auto min-w-0 max-w-[34rem]">
                 <InlineTitleEditor title={title} onSubmit={(next) => renameSlide(slideId, next)} />
               </div>
             </div>
 
-            <div className="ml-auto flex shrink-0 items-center gap-1">
+            <div className="flex flex-1 items-center justify-end gap-1 md:ml-auto md:flex-none">
               {config.mode === 'standalone' && (
                 <>
                   <LanguageToggle />
@@ -426,19 +562,11 @@ export function Slide() {
                   type="button"
                   aria-label={t.slide.copyLink}
                   title={t.slide.copyLink}
-                  className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(window.location.href);
-                      toast.success(t.slide.toastCopyLinkSuccess);
-                      setLinkCopied(true);
-                      if (linkCopiedTimerRef.current) clearTimeout(linkCopiedTimerRef.current);
-                      linkCopiedTimerRef.current = setTimeout(() => setLinkCopied(false), 1200);
-                    } catch (err) {
-                      console.error('[open-slide] copy link failed', err);
-                      toast.error(t.slide.toastCopyLinkFailed);
-                    }
-                  }}
+                  className={cn(
+                    buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
+                    'hidden md:inline-flex',
+                  )}
+                  onClick={copyLink}
                 >
                   <span className="relative grid size-4 place-items-center">
                     <Link2
@@ -463,7 +591,10 @@ export function Slide() {
                     disabled={exporting}
                     aria-label={t.slide.download}
                     title={t.slide.download}
-                    className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
+                    className={cn(
+                      buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
+                      'hidden md:inline-flex',
+                    )}
                   >
                     {exporting ? (
                       <Loader2 className="size-4 animate-spin" />
@@ -472,128 +603,35 @@ export function Slide() {
                     )}
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-[200px]">
-                    <DropdownMenuItem
-                      disabled={exporting}
-                      onSelect={async () => {
-                        if (!slide || exporting) return;
-                        setExporting(true);
-                        try {
-                          await exportSlideAsHtml(slide, slideId);
-                        } catch (err) {
-                          console.error('[open-slide] export failed', err);
-                        } finally {
-                          setExporting(false);
-                        }
-                      }}
-                    >
-                      <FileCode2 />
-                      {t.slide.exportAsHtml}
+                    {exportMenuItems}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              {view === 'slides' && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    type="button"
+                    disabled={exporting}
+                    aria-label={t.slide.moreActions}
+                    title={t.slide.moreActions}
+                    className={cn(
+                      buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
+                      'inline-flex md:hidden',
+                    )}
+                  >
+                    {exporting ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <MoreHorizontal className="size-4" />
+                    )}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-[200px]">
+                    <DropdownMenuItem onSelect={copyLink}>
+                      <Link2 />
+                      {t.slide.copyLink}
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      disabled={exporting}
-                      onSelect={async () => {
-                        if (!slide || exporting) return;
-                        if (isSafari()) {
-                          toast.error(t.slide.pdfExportSafariUnsupported, { duration: 5000 });
-                          return;
-                        }
-                        setExporting(true);
-                        const toastId = `pdf-export-${slideId}`;
-                        toast.custom(
-                          () => (
-                            <PdfProgressToast
-                              progress={{
-                                phase: 'processing',
-                                current: 0,
-                                total: pages.length,
-                                percent: 0,
-                              }}
-                            />
-                          ),
-                          { id: toastId, duration: Infinity },
-                        );
-                        try {
-                          await exportSlideAsPdf(slide, slideId, (p) => {
-                            toast.custom(() => <PdfProgressToast progress={p} />, {
-                              id: toastId,
-                              duration: Infinity,
-                            });
-                          });
-                        } catch (err) {
-                          console.error('[open-slide] pdf export failed', err);
-                          toast.error(t.slide.pdfExportFailed, { id: toastId, duration: 4000 });
-                        } finally {
-                          setExporting(false);
-                          toast.dismiss(toastId);
-                        }
-                      }}
-                    >
-                      <FileText />
-                      {t.slide.exportAsPdf}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      disabled={exporting}
-                      onSelect={async () => {
-                        if (!slide || exporting) return;
-                        setExporting(true);
-                        const toastId = `pptx-export-${slideId}`;
-                        toast.custom(
-                          () => (
-                            <PptxProgressToast
-                              progress={{
-                                phase: 'processing',
-                                current: 0,
-                                total: pages.length,
-                                percent: 0,
-                              }}
-                            />
-                          ),
-                          { id: toastId, duration: Infinity },
-                        );
-                        try {
-                          await exportSlideAsImagePptx(slide, slideId, (p) => {
-                            toast.custom(() => <PptxProgressToast progress={p} />, {
-                              id: toastId,
-                              duration: Infinity,
-                            });
-                          });
-                        } catch (err) {
-                          console.error('[open-slide] image pptx export failed', err);
-                          toast.error(t.slide.imagePptxExportFailed, {
-                            id: toastId,
-                            duration: 4000,
-                          });
-                        } finally {
-                          setExporting(false);
-                          toast.dismiss(toastId);
-                        }
-                      }}
-                    >
-                      <FileImage />
-                      {t.slide.exportAsImagePptx}
-                    </DropdownMenuItem>
-                    <TooltipProvider delayDuration={200}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div
-                            aria-disabled
-                            className="relative flex cursor-help items-center justify-between gap-2 rounded-[5px] px-2 py-1.5 text-[12.5px] opacity-45 select-none [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:opacity-80"
-                          >
-                            <span className="flex items-center gap-2">
-                              <Presentation />
-                              {t.slide.exportAsPptx}
-                            </span>
-                            <span className="rounded-[3px] bg-muted px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.04em] text-muted-foreground">
-                              {t.slide.comingSoon}
-                            </span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-[240px] leading-relaxed">
-                          {t.slide.pptxComingSoonTooltip}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    {allowHtmlDownload && <DropdownMenuSeparator />}
+                    {allowHtmlDownload && exportMenuItems}
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -662,7 +700,7 @@ export function Slide() {
             </div>
           ) : (
             <DesignProvider slideId={slideId}>
-              <div className="flex min-h-0 flex-1 flex-col">
+              <div className="relative flex min-h-0 flex-1 flex-col">
                 <div className="flex min-h-0 flex-1 flex-col md:flex-row">
                   <ResizableRail
                     pages={pages}
@@ -672,6 +710,7 @@ export function Slide() {
                     onReorder={import.meta.env.DEV ? reorderPage : undefined}
                     actions={thumbnailActions}
                     moduleTransition={slide.transition}
+                    onOverview={() => setOverviewOpen(true)}
                   />
                   <main
                     ref={slideViewportRef}
@@ -725,6 +764,16 @@ export function Slide() {
                     initial={slide.notes?.[index]}
                   />
                 )}
+                <OverviewGrid
+                  pages={pages}
+                  design={slide.design}
+                  open={overviewOpen}
+                  current={index}
+                  onClose={() => setOverviewOpen(false)}
+                  onSelect={goTo}
+                  variant="editor"
+                  moduleTransition={slide.transition}
+                />
               </div>
             </DesignProvider>
           )}
@@ -755,6 +804,7 @@ function ResizableRail(props: {
   onReorder?: (from: number, to: number) => void;
   actions?: ThumbnailActions;
   moduleTransition?: SlideModule['transition'];
+  onOverview?: () => void;
 }) {
   const t = useLocale();
   const [width, setWidth] = useState<number>(readStoredRailWidth);
@@ -882,7 +932,11 @@ function AgentConnectedBadge() {
             {connected ? t.slide.agentConnected : t.slide.agentDisconnected}
           </button>
         </TooltipTrigger>
-        <TooltipContent side="bottom" align="start" className="max-w-[280px] leading-relaxed">
+        <TooltipContent
+          side="bottom"
+          align="start"
+          className="w-max max-w-[min(520px,calc(100vw-2rem))] text-center leading-relaxed"
+        >
           {connected ? t.slide.agentConnectedTooltip : t.slide.agentDisconnectedTooltip}
         </TooltipContent>
       </Tooltip>
@@ -1015,6 +1069,7 @@ function InlineTitleEditor({
               if (!saving) commit();
             }}
             onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
               if (e.key === 'Enter') {
                 e.preventDefault();
                 commit();

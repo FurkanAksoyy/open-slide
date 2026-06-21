@@ -1,4 +1,6 @@
-type QA = { q: string; a: string };
+import { FaqItem } from './faq-item';
+
+export type QA = { q: string; a: string };
 
 export const faqs: QA[] = [
   {
@@ -39,19 +41,9 @@ export function FAQ() {
           </span>
         </h2>
 
-        <dl className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[color:var(--color-rule)] border border-[color:var(--color-rule)] rounded-[6px] overflow-hidden">
-          {faqs.map((item) => (
-            <div
-              key={item.q}
-              className="bg-[color:var(--color-ink)] p-8 sm:p-10 flex flex-col gap-4"
-            >
-              <dt className="text-[18px] sm:text-[20px] font-medium tracking-[-0.02em] leading-[1.3] text-[color:var(--color-text)]">
-                {item.q}
-              </dt>
-              <dd className="text-[15px] leading-[1.65] text-[color:var(--color-text-soft)] max-w-[60ch]">
-                {item.a}
-              </dd>
-            </div>
+        <dl className="max-w-[860px]">
+          {faqs.map((item, idx) => (
+            <FaqItem key={item.q} item={item} index={idx} />
           ))}
         </dl>
       </div>
