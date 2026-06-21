@@ -1,4 +1,4 @@
-# open-slide — single slide
+# open-slide — standalone deck
 
 A standalone open-slide deck. The whole presentation is one file: `index.tsx`.
 
