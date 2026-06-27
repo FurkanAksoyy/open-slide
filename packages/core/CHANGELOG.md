@@ -1,5 +1,11 @@
 # @open-slide/core
 
+## 1.13.2
+
+### Patch Changes
+
+- [#263](https://github.com/1weiho/open-slide/pull/263) [`bda2fd6`](https://github.com/1weiho/open-slide/commit/bda2fd6646814541d6a5623840c4c5396b9b0c5a) Thanks [@1weiho](https://github.com/1weiho)! - Virtualize the horizontal thumbnail rail in large decks.
+
 ## 1.13.1
 
 ### Patch Changes
