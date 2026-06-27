@@ -334,6 +334,18 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     if (!/^index\.(tsx|jsx|ts|js)$/.test(parts[1])) return null;
     return parts[0];
   };
+  const slideIdForLocalFile = (p: string): string | null => {
+    const rel = path.relative(slidesRoot, p);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) return null;
+    const parts = rel.split(path.sep);
+    const slideId = parts[0];
+    if (!slideId || !/^[a-z0-9_-]+$/i.test(slideId)) return null;
+    return parts.length > 1 ? slideId : null;
+  };
+  const invalidateAssetsModule = (server: ViteDevServer) => {
+    const mod = server.moduleGraph.getModuleById(resolved(ASSETS_VMOD));
+    if (mod) server.moduleGraph.invalidateModule(mod);
+  };
   let slideChangeTimer: ReturnType<typeof setTimeout> | null = null;
   const pendingSlideChanges = new Set<string>();
   const queueSlideChanged = (server: ViteDevServer, id: string) => {
@@ -399,7 +411,10 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     },
     handleHotUpdate(ctx) {
       const slideId = slideIdForEntry(ctx.file);
-      if (!slideId) return;
+      if (!slideId) {
+        if (slideIdForLocalFile(ctx.file)) invalidateAssetsModule(ctx.server);
+        return;
+      }
       queueSlideChanged(ctx.server, slideId);
       return [];
     },
@@ -439,12 +454,15 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       };
       server.watcher.add(foldersManifestPath);
       server.watcher.on('change', (p) => {
+        if (slideIdForLocalFile(p)) invalidateAssetsModule(server);
         if (p === foldersManifestPath) invalidateFolders();
       });
       server.watcher.on('add', (p) => {
+        if (slideIdForLocalFile(p)) invalidateAssetsModule(server);
         if (p === foldersManifestPath) invalidateFolders();
       });
       server.watcher.on('unlink', (p) => {
+        if (slideIdForLocalFile(p)) invalidateAssetsModule(server);
         if (p === foldersManifestPath) invalidateFolders();
       });
     },
