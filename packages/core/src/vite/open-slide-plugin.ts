@@ -1,6 +1,8 @@
 import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { parse as babelParse } from '@babel/parser';
+import * as t from '@babel/types';
 import fg from 'fast-glob';
 import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
@@ -18,6 +20,19 @@ const CONFIG_FILE = 'open-slide.config.ts';
 const SLIDES_VMOD = 'virtual:open-slide/slides';
 const CONFIG_VMOD = 'virtual:open-slide/config';
 const FOLDERS_VMOD = 'virtual:open-slide/folders';
+const ASSETS_VMOD = 'virtual:open-slide/assets';
+const IMAGE_EXTS = new Set([
+  '.avif',
+  '.bmp',
+  '.gif',
+  '.ico',
+  '.jpeg',
+  '.jpg',
+  '.png',
+  '.svg',
+  '.webp',
+]);
+const SOURCE_EXTS = ['.tsx', '.jsx', '.ts', '.js'];
 
 type FoldersManifest = {
   folders: unknown[];
@@ -56,6 +71,26 @@ async function findSlides(userCwd: string, slidesDir: string): Promise<string[]>
     onlyFiles: true,
   });
   return hits.sort();
+}
+
+function isImageAsset(file: string): boolean {
+  const clean = file.split(/[?#]/, 1)[0] ?? file;
+  return IMAGE_EXTS.has(path.extname(clean).toLowerCase());
+}
+
+function resolveLocalSourceImport(from: string, spec: string, slideDir: string): string | null {
+  if (!spec.startsWith('.')) return null;
+  const base = path.resolve(path.dirname(from), spec);
+  if (base !== slideDir && !base.startsWith(slideDir + path.sep)) return null;
+
+  const ext = path.extname(base);
+  const candidates = SOURCE_EXTS.includes(ext)
+    ? [base]
+    : [
+        ...SOURCE_EXTS.map((sourceExt) => `${base}${sourceExt}`),
+        ...SOURCE_EXTS.map((sourceExt) => path.join(base, `index${sourceExt}`)),
+      ];
+  return candidates.find((candidate) => existsSync(candidate)) ?? null;
 }
 
 function toId(absFile: string, slidesRoot: string): string {
@@ -106,6 +141,62 @@ async function readSlideMeta(abs: string): Promise<ExtractedMeta> {
   } catch {
     return { theme: null, createdAt: null };
   }
+}
+
+async function readImportedImageAssets(
+  abs: string,
+  slidesRoot: string,
+  assetsRoot: string,
+): Promise<string[]> {
+  const slideId = toId(abs, slidesRoot);
+  const slideDir = path.join(slidesRoot, slideId);
+  const slideAssetsRoot = path.join(slidesRoot, slideId, 'assets');
+  const imported = new Set<string>();
+  const seen = new Set<string>();
+
+  async function visit(filePath: string) {
+    if (seen.has(filePath)) return;
+    seen.add(filePath);
+
+    let ast: t.File;
+    try {
+      const src = await fs.readFile(filePath, 'utf8');
+      ast = babelParse(src, {
+        sourceType: 'module',
+        plugins: ['typescript', 'jsx'],
+        errorRecovery: true,
+      });
+    } catch {
+      return;
+    }
+
+    const localImports: string[] = [];
+    for (const stmt of ast.program.body) {
+      if (!t.isImportDeclaration(stmt)) continue;
+      const raw = stmt.source.value;
+      const clean = raw.split(/[?#]/, 1)[0] ?? raw;
+      if (isImageAsset(clean)) {
+        let asset: string | null = null;
+        if (clean.startsWith('@assets/')) {
+          asset = path.resolve(assetsRoot, clean.slice('@assets/'.length));
+          if (!asset.startsWith(assetsRoot + path.sep)) asset = null;
+        } else if (clean.startsWith('.')) {
+          asset = path.resolve(path.dirname(filePath), clean);
+          if (!asset.startsWith(slideAssetsRoot + path.sep)) asset = null;
+        }
+        if (asset) imported.add(asset);
+        continue;
+      }
+
+      const next = resolveLocalSourceImport(filePath, clean, slideDir);
+      if (next) localImports.push(next);
+    }
+
+    await Promise.all(localImports.map((next) => visit(next)));
+  }
+
+  await visit(abs);
+  return Array.from(imported).sort();
 }
 
 function parseCreatedAtMs(iso: string | null): number | null {
@@ -176,10 +267,62 @@ ${cases}
 `;
 }
 
+function toAssetImportPath(abs: string, isDev: boolean): string {
+  const normalized = normalizePath(abs);
+  const spec = isDev ? `/@fs/${normalized.replace(/^\/+/, '')}` : normalized;
+  return `${spec}?url`;
+}
+
+async function generateAssetsModule(
+  files: string[],
+  slidesRoot: string,
+  assetsRoot: string,
+  isDev: boolean,
+): Promise<string> {
+  const entries = await Promise.all(
+    files.map(async (abs) => ({
+      id: toId(abs, slidesRoot),
+      assets: await readImportedImageAssets(abs, slidesRoot, assetsRoot),
+    })),
+  );
+
+  const assetIds = new Map<string, string>();
+  for (const entry of entries) {
+    for (const asset of entry.assets) {
+      if (!assetIds.has(asset)) assetIds.set(asset, `asset${assetIds.size}`);
+    }
+  }
+
+  const imports = Array.from(assetIds, ([asset, ident]) => {
+    return `import ${ident} from ${JSON.stringify(toAssetImportPath(asset, isDev))};`;
+  }).join('\n');
+  const manifest = Object.fromEntries(
+    entries
+      .filter((entry) => entry.assets.length > 0)
+      .map((entry) => [entry.id, entry.assets.map((asset) => assetIds.get(asset))]),
+  );
+  const manifestEntries = Object.entries(manifest)
+    .map(([id, assets]) => `  ${JSON.stringify(id)}: [${assets.join(', ')}],`)
+    .join('\n');
+
+  return `${imports}
+
+const imageAssets = {
+${manifestEntries}
+};
+
+export async function loadSlideImageAssets(id) {
+  return imageAssets[id] ?? [];
+}
+`;
+}
+
 export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
   const { userCwd, config, coreVersion } = opts;
   const slidesDir = config.slidesDir ?? 'slides';
+  const assetsDir = config.assetsDir ?? 'assets';
   const slidesRoot = path.resolve(userCwd, slidesDir);
+  const assetsRoot = path.resolve(userCwd, assetsDir);
   const foldersManifestPath = path.join(slidesRoot, '.folders.json');
 
   let isDev = false;
@@ -198,8 +341,10 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     if (slideChangeTimer) clearTimeout(slideChangeTimer);
     slideChangeTimer = setTimeout(() => {
       slideChangeTimer = null;
-      const mod = server.moduleGraph.getModuleById(resolved(SLIDES_VMOD));
-      if (mod) server.moduleGraph.invalidateModule(mod);
+      for (const id of [SLIDES_VMOD, ASSETS_VMOD]) {
+        const mod = server.moduleGraph.getModuleById(resolved(id));
+        if (mod) server.moduleGraph.invalidateModule(mod);
+      }
       const slideIds = Array.from(pendingSlideChanges);
       pendingSlideChanges.clear();
       server.ws.send({
@@ -222,6 +367,7 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       if (id === SLIDES_VMOD) return resolved(SLIDES_VMOD);
       if (id === CONFIG_VMOD) return resolved(CONFIG_VMOD);
       if (id === FOLDERS_VMOD) return resolved(FOLDERS_VMOD);
+      if (id === ASSETS_VMOD) return resolved(ASSETS_VMOD);
       return null;
     },
     async load(id) {
@@ -244,6 +390,10 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
       if (id === resolved(FOLDERS_VMOD)) {
         const manifest = await readFoldersManifest(foldersManifestPath);
         return `export default ${JSON.stringify(manifest)};\n`;
+      }
+      if (id === resolved(ASSETS_VMOD)) {
+        const files = await findSlides(userCwd, slidesDir);
+        return await generateAssetsModule(files, slidesRoot, assetsRoot, isDev);
       }
       return null;
     },

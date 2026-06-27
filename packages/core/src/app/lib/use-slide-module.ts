@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { preloadSlideImages } from './preload-slide-images';
 import type { SlideModule } from './sdk';
 import { loadSlide, slideChangeIncludes } from './slides';
 
@@ -24,8 +25,9 @@ export function useSlideModule(slideId: string) {
   );
 
   useEffect(() => {
+    void preloadSlideImages(slideId);
     reload(true);
-  }, [reload]);
+  }, [slideId, reload]);
 
   useEffect(() => {
     if (!import.meta.hot) return;

@@ -31,6 +31,10 @@ declare module 'virtual:open-slide/folders' {
   export default manifest;
 }
 
+declare module 'virtual:open-slide/assets' {
+  export function loadSlideImageAssets(id: string): Promise<string[]>;
+}
+
 declare module 'virtual:open-slide/themes' {
   import type { DesignSystem } from './lib/design';
   import type { Page } from './lib/sdk';
