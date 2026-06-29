@@ -206,10 +206,15 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
           let ended = false;
           await new Promise<void>((resolve, reject) => {
             req.on('data', (c: Buffer) => {
+              // Once over the limit, stop buffering (so memory stays bounded) but
+              // keep draining the body to its end instead of destroying the
+              // request — req.destroy() can tear down the socket before the 413
+              // response is written, turning it into a connection error.
+              if (oversized) return;
               total += c.length;
               if (total > ASSET_MAX_BYTES) {
                 oversized = true;
-                req.destroy();
+                chunks.length = 0;
                 return;
               }
               chunks.push(c);
@@ -219,8 +224,8 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
               resolve();
             });
             req.on('error', reject);
-            // req.destroy() (oversized) and client aborts emit 'close' without
-            // 'end'/'error'; resolve here so the request doesn't hang forever.
+            // A client abort emits 'close' without 'end'/'error'; resolve here so
+            // the request doesn't hang forever.
             req.on('close', () => resolve());
           });
           if (oversized) return json(res, 413, { error: 'file too large' });
