@@ -39,9 +39,12 @@ export async function exportSlideAsImagePptx(
   const pages = slide.default ?? [];
   if (pages.length === 0) return;
 
-  // Count only renderable pages: falsy holes are skipped during capture, so
-  // counting them here would leave the progress `current` short of `total`.
-  const total = pages.filter(Boolean).length;
+  // Drop falsy page holes up front and drive everything (progress total, render
+  // loop, and the per-page index/total handed to SlidePageProvider) off this
+  // compact list, so the metadata baked into each image matches the exported
+  // deck rather than the sparse source array.
+  const renderablePages = pages.filter(Boolean);
+  const total = renderablePages.length;
   if (total === 0) return;
   onProgress?.({ phase: 'processing', current: 0, total, percent: 0 });
 
@@ -76,9 +79,8 @@ export async function exportSlideAsImagePptx(
 
   const reactRoots: Root[] = [];
   const frames: HTMLElement[] = [];
-  for (let i = 0; i < pages.length; i++) {
-    const Page = pages[i];
-    if (!Page) continue;
+  for (let i = 0; i < renderablePages.length; i++) {
+    const Page = renderablePages[i];
     const host = document.createElement('div');
     host.setAttribute('data-osd-canvas', '');
     host.style.width = `${SLIDE_W}px`;
@@ -92,7 +94,7 @@ export async function exportSlideAsImagePptx(
     frames.push(host);
     const r = createRoot(host);
     r.render(
-      createElement(SlidePageProvider, { index: i, total: pages.length }, createElement(Page)),
+      createElement(SlidePageProvider, { index: i, total }, createElement(Page)),
     );
     reactRoots.push(r);
   }
