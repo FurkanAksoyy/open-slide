@@ -203,6 +203,7 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
           const chunks: Buffer[] = [];
           let total = 0;
           let oversized = false;
+          let ended = false;
           await new Promise<void>((resolve, reject) => {
             req.on('data', (c: Buffer) => {
               total += c.length;
@@ -213,10 +214,17 @@ export function registerAssetRoutes(server: ViteDevServer, ctx: ApiContext): voi
               }
               chunks.push(c);
             });
-            req.on('end', () => resolve());
+            req.on('end', () => {
+              ended = true;
+              resolve();
+            });
             req.on('error', reject);
+            // req.destroy() (oversized) and client aborts emit 'close' without
+            // 'end'/'error'; resolve here so the request doesn't hang forever.
+            req.on('close', () => resolve());
           });
           if (oversized) return json(res, 413, { error: 'file too large' });
+          if (!ended) return json(res, 400, { error: 'upload interrupted' });
 
           await fs.writeFile(file, Buffer.concat(chunks));
           return json(res, 200, {
