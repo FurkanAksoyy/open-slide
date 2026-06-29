@@ -1085,9 +1085,14 @@ type AssetEditPlan = {
   attrSplice: Splice;
 };
 
+// Accumulates state across the asset ops of a single edit so they plan imports
+// against each other, not just the unchanged AST.
+type ImportPlanCtx = { planned: Map<string, string>; taken: Set<string> };
+
 export function planAssetImport(
   ast: t.File,
   assetPath: string,
+  ctx?: ImportPlanCtx,
 ): { identifier: string; importSplice: Splice | null } {
   const imports = findImports(ast);
   for (const imp of imports) {
@@ -1095,8 +1100,19 @@ export function planAssetImport(
       return { identifier: imp.defaultIdent, importSplice: null };
     }
   }
+  // Reuse an import already planned for this same path earlier in the edit, so
+  // two ops on the same asset don't emit a duplicate `import` (invalid binding).
+  const planned = ctx?.planned.get(assetPath);
+  if (planned) return { identifier: planned, importSplice: null };
+
   const filename = assetPath.slice(assetPath.lastIndexOf('/') + 1);
-  const identifier = safeAssetIdentifier(filename, collectTopLevelIdentifiers(ast));
+  // Draw from the accumulating taken-set so an identifier planned earlier in the
+  // edit is also avoided (e.g. logo.png and logo!.png both normalizing to `logo`).
+  const identifier = safeAssetIdentifier(filename, ctx?.taken ?? collectTopLevelIdentifiers(ast));
+  if (ctx) {
+    ctx.taken.add(identifier);
+    ctx.planned.set(assetPath, identifier);
+  }
   const importStmt = `import ${identifier} from '${assetPath.replace(/'/g, "\\'")}';\n`;
   const last = imports[imports.length - 1];
   const insertAt = last ? (last.node.end ?? 0) : 0;
@@ -1109,13 +1125,14 @@ function planAssetAttr(
   element: t.JSXElement,
   attr: string,
   assetPath: string,
+  ctx?: ImportPlanCtx,
 ): AssetEditPlan | { error: string } {
   if (!attr || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(attr)) return { error: 'invalid attribute name' };
   if (!assetPath.startsWith('./assets/') && !assetPath.startsWith('@assets/')) {
     return { error: 'asset path must start with ./assets/ or @assets/' };
   }
 
-  const { identifier, importSplice } = planAssetImport(ast, assetPath);
+  const { identifier, importSplice } = planAssetImport(ast, assetPath, ctx);
   const opening = element.openingElement;
   const newAttr = `${attr}={${identifier}}`;
   const existing = findJsxAttr(opening, attr);
@@ -1134,6 +1151,7 @@ function planReplacePlaceholder(
   ast: t.File,
   element: t.JSXElement,
   assetPath: string,
+  ctx?: ImportPlanCtx,
 ): PlaceholderEditPlan | { error: string } {
   const opening = element.openingElement;
   if (!t.isJSXIdentifier(opening.name) || opening.name.name !== 'ImagePlaceholder') {
@@ -1147,7 +1165,7 @@ function planReplacePlaceholder(
   const width = readJsxNumberAttr(opening, 'width');
   const height = readJsxNumberAttr(opening, 'height');
 
-  const { identifier, importSplice } = planAssetImport(ast, assetPath);
+  const { identifier, importSplice } = planAssetImport(ast, assetPath, ctx);
 
   const styleParts: string[] = [];
   if (width != null) styleParts.push(`width: ${width}`);
@@ -1228,15 +1246,21 @@ export function applyEdit(
     op.kind === 'replace-placeholder-with-image' ? [op] : [],
   );
   if (assetOps.length > 0 || placeholderOps.length > 0) {
+    // Shared across every asset/placeholder op in this edit so they reuse one
+    // import per path and never collide on a synthesized identifier.
+    const importCtx: ImportPlanCtx = {
+      planned: new Map<string, string>(),
+      taken: collectTopLevelIdentifiers(ast),
+    };
     const importSplices: Splice[] = [];
     for (const op of assetOps) {
-      const plan = planAssetAttr(ast, element, op.attr, op.assetPath);
+      const plan = planAssetAttr(ast, element, op.attr, op.assetPath, importCtx);
       if ('error' in plan) return { ok: false, status: 422, error: plan.error };
       splices.push(plan.attrSplice);
       if (plan.importSplice) importSplices.push(plan.importSplice);
     }
     for (const op of placeholderOps) {
-      const plan = planReplacePlaceholder(ast, element, op.assetPath);
+      const plan = planReplacePlaceholder(ast, element, op.assetPath, importCtx);
       if ('error' in plan) return { ok: false, status: 422, error: plan.error };
       splices.push(plan.elementSplice);
       if (plan.importSplice) importSplices.push(plan.importSplice);
@@ -1256,6 +1280,15 @@ export function applyEdit(
   if (splices.length === 0) return { ok: true, source };
 
   splices.sort((a, b) => b.from - a.from);
+  // Reject overlapping splice ranges: they are applied by reverse-`from` string
+  // slicing, so two ranges that share characters would corrupt each other (and
+  // can still parse, slipping past the guard below). Half-open [from, to), so
+  // touching boundaries and same-point zero-width inserts are not overlaps.
+  for (let i = 0; i < splices.length - 1; i++) {
+    if (Math.max(splices[i].from, splices[i + 1].from) < Math.min(splices[i].to, splices[i + 1].to)) {
+      return { ok: false, status: 422, error: 'edit ops overlap' };
+    }
+  }
   let next = source;
   for (const sp of splices) {
     next = next.slice(0, sp.from) + sp.text + next.slice(sp.to);

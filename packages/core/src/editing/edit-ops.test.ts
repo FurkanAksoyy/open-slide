@@ -1017,6 +1017,26 @@ describe('applyEdit / set-attr-asset', () => {
     expect(occurrences.length).toBe(1);
   });
 
+  it('emits a single import for two ops on the same new asset path', () => {
+    const src = [
+      "import logo from './assets/logo.svg';",
+      'export default [() => (',
+      '<img src={logo} />',
+      ')];',
+      '',
+    ].join('\n');
+    const r = applyEdit(src, 3, 0, [
+      { kind: 'set-attr-asset', attr: 'src', assetPath: './assets/photo.png' },
+      { kind: 'set-attr-asset', attr: 'poster', assetPath: './assets/photo.png' },
+    ]);
+    if (!r.ok) throw new Error(`expected ok, got ${r.error}`);
+    // Both attributes point at the shared identifier, with only one import.
+    const importOccurrences = r.source.match(/import \w+ from '\.\/assets\/photo\.png'/g) ?? [];
+    expect(importOccurrences.length).toBe(1);
+    expect(r.source).toContain('src={photo}');
+    expect(r.source).toContain('poster={photo}');
+  });
+
   it('inserts a fresh src attribute on an <img> that has none', () => {
     const src = [
       "import alt from './assets/alt.svg';",
