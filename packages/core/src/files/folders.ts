@@ -58,6 +58,31 @@ export async function writeManifest(file: string, manifest: FoldersManifest): Pr
   return run;
 }
 
+export type ManifestMutation = { write: boolean; status: number; body: unknown };
+
+// Run a read-modify-write against a manifest exclusively. Serializing the whole
+// read+mutate+write per file (not just the write) closes the lost-update race
+// where two handlers both read a stale copy and the later write drops the
+// earlier mutation. The mutator decides whether to persist and what to respond.
+const manifestUpdateChains = new Map<string, Promise<unknown>>();
+
+export async function updateManifest(
+  file: string,
+  mutate: (manifest: FoldersManifest) => ManifestMutation,
+): Promise<{ status: number; body: unknown }> {
+  const prev = manifestUpdateChains.get(file) ?? Promise.resolve();
+  const run = prev
+    .catch(() => {})
+    .then(async () => {
+      const manifest = await readManifest(file);
+      const { write, status, body } = mutate(manifest);
+      if (write) await writeManifest(file, manifest);
+      return { status, body };
+    });
+  manifestUpdateChains.set(file, run.catch(() => {}));
+  return run;
+}
+
 export function newFolderId(): string {
   return `f-${randomUUID().replace(/-/g, '').slice(0, 8)}`;
 }
