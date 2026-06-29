@@ -21,6 +21,20 @@ export type ApplyEditResult =
 
 export type Splice = { from: number; to: number; text: string };
 
+// Two splices conflict if applying them by reverse-`from` string slicing would
+// corrupt each other. Half-open [from, to): a zero-width splice conflicts only
+// when its insertion point falls strictly inside the other's range; two
+// non-empty ranges conflict when they share any character. Touching boundaries
+// and two zero-width inserts at the same point are fine.
+export function splicesConflict(a: Splice, b: Splice): boolean {
+  const aEmpty = a.from === a.to;
+  const bEmpty = b.from === b.to;
+  if (aEmpty && bEmpty) return false;
+  if (aEmpty) return b.from < a.from && a.from < b.to;
+  if (bEmpty) return a.from < b.from && b.from < a.to;
+  return Math.max(a.from, b.from) < Math.min(a.to, b.to);
+}
+
 export function jsString(s: string): string {
   return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
 }
@@ -1280,13 +1294,16 @@ export function applyEdit(
   if (splices.length === 0) return { ok: true, source };
 
   splices.sort((a, b) => b.from - a.from);
-  // Reject overlapping splice ranges: they are applied by reverse-`from` string
-  // slicing, so two ranges that share characters would corrupt each other (and
-  // can still parse, slipping past the guard below). Half-open [from, to), so
-  // touching boundaries and same-point zero-width inserts are not overlaps.
-  for (let i = 0; i < splices.length - 1; i++) {
-    if (Math.max(splices[i].from, splices[i + 1].from) < Math.min(splices[i].to, splices[i + 1].to)) {
-      return { ok: false, status: 422, error: 'edit ops overlap' };
+  // Reject any conflicting splice pair before applying by reverse-`from`
+  // slicing. Check all pairs, not just adjacent ones: a zero-width insert nested
+  // inside a replacement (or sitting between two overlapping ranges) would hide
+  // the conflict from an adjacent-only scan, then corrupt the output while still
+  // parsing and slipping past the guard below.
+  for (let i = 0; i < splices.length; i++) {
+    for (let j = i + 1; j < splices.length; j++) {
+      if (splicesConflict(splices[i], splices[j])) {
+        return { ok: false, status: 422, error: 'edit ops overlap' };
+      }
     }
   }
   let next = source;

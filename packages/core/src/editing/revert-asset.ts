@@ -9,6 +9,7 @@ import {
   readJsxStringAttr,
   type Splice,
   spliceRange,
+  splicesConflict,
 } from './edit-ops.ts';
 
 type ImgSrcUse = { element: t.JSXElement; identNode: t.Identifier };
@@ -194,12 +195,13 @@ export function applyRevertAsset(source: string, assetPath: string): ApplyEditRe
   if (splices.length === 0) return { ok: true, source };
 
   splices.sort((a, b) => b.from - a.from);
-  // Reject overlapping splice ranges before applying them by reverse-`from`
-  // slicing — overlapping ranges corrupt each other and can still parse.
-  // Half-open [from, to), so touching boundaries are not overlaps.
-  for (let i = 0; i < splices.length - 1; i++) {
-    if (Math.max(splices[i].from, splices[i + 1].from) < Math.min(splices[i].to, splices[i + 1].to)) {
-      return { ok: false, status: 422, error: 'revert ops overlap' };
+  // Reject any conflicting splice pair (all pairs, so a nested zero-width insert
+  // can't hide a conflict) before applying by reverse-`from` slicing.
+  for (let i = 0; i < splices.length; i++) {
+    for (let j = i + 1; j < splices.length; j++) {
+      if (splicesConflict(splices[i], splices[j])) {
+        return { ok: false, status: 422, error: 'revert ops overlap' };
+      }
     }
   }
   let next = source;

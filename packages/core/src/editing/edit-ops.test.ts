@@ -1,5 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { applyEdit, safeAssetIdentifier } from './edit-ops.ts';
+import { applyEdit, safeAssetIdentifier, splicesConflict } from './edit-ops.ts';
+
+describe('splicesConflict', () => {
+  const s = (from: number, to: number) => ({ from, to, text: '' });
+
+  it('flags ranges that share characters', () => {
+    expect(splicesConflict(s(0, 5), s(3, 8))).toBe(true);
+  });
+
+  it('allows disjoint and touching ranges', () => {
+    expect(splicesConflict(s(0, 5), s(5, 10))).toBe(false);
+    expect(splicesConflict(s(0, 5), s(10, 12))).toBe(false);
+  });
+
+  it('flags a zero-width insert nested inside a range', () => {
+    expect(splicesConflict(s(3, 3), s(0, 5))).toBe(true);
+    expect(splicesConflict(s(0, 5), s(3, 3))).toBe(true);
+  });
+
+  it('allows a zero-width insert at a range boundary or a shared point', () => {
+    expect(splicesConflict(s(5, 5), s(0, 5))).toBe(false);
+    expect(splicesConflict(s(0, 0), s(0, 5))).toBe(false);
+    expect(splicesConflict(s(4, 4), s(4, 4))).toBe(false);
+  });
+});
 
 describe('applyEdit / set-style', () => {
   // Every JSX opening tag in these synthetic sources sits at column 0;
