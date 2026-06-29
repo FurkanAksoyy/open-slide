@@ -433,6 +433,10 @@ function findNotesArray(source: string): NotesArrayInfo | null | 'invalid' {
  * is too surprising to touch safely.
  */
 export function reorderNotesArrayInSource(source: string, order: number[]): string | null {
+  // `order` maps new positions to old indices. This intentionally tolerates
+  // non-permutation orders (duplicate/dropped indices): out-of-range picks
+  // become `undefined` and trailing `undefined` is trimmed, so e.g. [1, 1] over
+  // empty notes collapses to []. Only reject clearly invalid indices.
   for (const idx of order) {
     if (!Number.isInteger(idx) || idx < 0) return null;
   }

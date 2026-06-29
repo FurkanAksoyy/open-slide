@@ -39,9 +39,23 @@ export async function readManifest(file: string): Promise<FoldersManifest> {
   }
 }
 
+// Serialize writes to the same manifest file so concurrent mutations don't
+// physically interleave, and write atomically (temp file + rename) so a crash
+// mid-write can't truncate the manifest.
+const manifestWriteChains = new Map<string, Promise<unknown>>();
+
 export async function writeManifest(file: string, manifest: FoldersManifest): Promise<void> {
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  const prev = manifestWriteChains.get(file) ?? Promise.resolve();
+  const run = prev
+    .catch(() => {})
+    .then(async () => {
+      await fs.mkdir(path.dirname(file), { recursive: true });
+      const tmp = `${file}.${randomUUID().slice(0, 8)}.tmp`;
+      await fs.writeFile(tmp, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+      await fs.rename(tmp, file);
+    });
+  manifestWriteChains.set(file, run.catch(() => {}));
+  return run;
 }
 
 export function newFolderId(): string {

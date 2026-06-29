@@ -90,8 +90,12 @@ function findInsertionOffset(ast: t.File, source: string): number {
   return source.length;
 }
 
+// A note index aligns with a slide page; cap it so a bogus huge index can't
+// drive the padding loops below into allocating a giant array (OOM).
+const MAX_NOTES_INDEX = 10_000;
+
 export function applyNotesEdit(source: string, index: number, text: string): ApplyNotesEditResult {
-  if (!Number.isInteger(index) || index < 0) {
+  if (!Number.isInteger(index) || index < 0 || index > MAX_NOTES_INDEX) {
     return { ok: false, status: 400, error: 'invalid index' };
   }
 

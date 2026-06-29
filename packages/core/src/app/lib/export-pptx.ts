@@ -39,7 +39,10 @@ export async function exportSlideAsImagePptx(
   const pages = slide.default ?? [];
   if (pages.length === 0) return;
 
-  const total = pages.length;
+  // Count only renderable pages: falsy holes are skipped during capture, so
+  // counting them here would leave the progress `current` short of `total`.
+  const total = pages.filter(Boolean).length;
+  if (total === 0) return;
   onProgress?.({ phase: 'processing', current: 0, total, percent: 0 });
 
   const container = document.createElement('div');
