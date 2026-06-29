@@ -74,7 +74,9 @@ export function validateIcon(v: unknown): FolderIcon | null {
   const icon = v as { type?: unknown; value?: unknown };
   if (icon.type === 'emoji') {
     if (typeof icon.value !== 'string') return null;
-    if (icon.value.length < 1 || icon.value.length > 8) return null;
+    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+    const realLength = [...segmenter.segment(icon.value)].length;
+    if (realLength < 1 || realLength > 8) return null;
     return { type: 'emoji', value: icon.value };
   }
   if (icon.type === 'color') {
